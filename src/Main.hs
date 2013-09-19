@@ -57,10 +57,14 @@ wsApplication state rq = do
         return s'
     receiveMessage state sink
 
-receiveMessage :: W.Protocol p => MVar ServerState -> ClientSink -> W.WebSockets p ()
+receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     rawMsg <- W.receiveData 
     liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
+    liftIO $ putStrLn "Getline"
+    x <- liftIO getLine
+    liftIO $ putStrLn $ "Gotline: " ++ x
+    W.send $ W.textData $ T.pack $ "Gotline: " ++ x
     receiveMessage state sink
   where
     catchDisconnect e = case fromException e of
