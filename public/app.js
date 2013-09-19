@@ -6,9 +6,8 @@ function startWebSocket() {
     console.log("Connected to server");
   };
   websocket.onmessage = function(event){
-    console.log(event);
+    console.log("onmessage:" + event.data);
   };
-  
   websocket.onclose = function(event){
     console.log("connection closed");
   };

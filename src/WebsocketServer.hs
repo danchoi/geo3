@@ -8,7 +8,6 @@ import Control.Monad (forM_, liftM)
 import qualified Data.Map as M
 import Data.Monoid (mappend)
 import Data.Text (Text)
-import Control.OldException
 import Control.Exception (fromException)
 import qualified Network.WebSockets as WS
 import Data.Text.Lazy.Encoding as E
@@ -36,7 +35,7 @@ wsApplication :: MVar ServerState -> WS.Request -> WS.WebSockets WS.Hybi10 ()
 wsApplication state rq = do
     WS.acceptRequest rq
     WS.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
-    WS.spawnPingThread 30  :: WS.WebSockets WS.Hybi10 ()
+    WS.spawnPingThread 30 :: WS.WebSockets WS.Hybi10 ()
     sink <- WS.getSink
     sinks <- liftIO $ readMVar state
     liftIO $ putStrLn $ "Create client " `mappend` "test"
