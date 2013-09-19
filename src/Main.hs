@@ -19,8 +19,7 @@ import Snap.Http.Server
 import Snap.Util.FileServe
 
 import Network.WebSockets.Snap 
-
-import qualified Network.WebSockets as WS
+import qualified Network.WebSockets as W
 
 simpleConfig :: Config m a
 simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
@@ -35,7 +34,7 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     bsFromString = TE.encodeUtf8 . T.pack
 
 
-type ClientSink = WS.Sink WS.Hybi10
+type ClientSink = W.Sink W.Hybi10
 type ServerState = [ClientSink]
 
 addClientSink :: ClientSink -> ServerState -> ServerState
@@ -45,36 +44,33 @@ removeClientSink :: ClientSink -> ServerState -> ServerState
 removeClientSink = undefined
 
 
-wsApplication :: MVar ServerState -> WS.Request -> WS.WebSockets WS.Hybi10 ()
+wsApplication :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 wsApplication state rq = do
-    WS.acceptRequest rq
-    WS.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
-    WS.spawnPingThread 30 :: WS.WebSockets WS.Hybi10 ()
-    sink <- WS.getSink
+    W.acceptRequest rq
+    W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
+    W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
+    sink <- W.getSink
     sinks <- liftIO $ readMVar state
     liftIO $ putStrLn $ "Create client " 
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink sink s
-        WS.sendSink sink $ WS.textData $ T.pack "hello handshake"
+        W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
     receiveMessage state sink
 
-receiveMessage :: WS.Protocol p => MVar ServerState -> ClientSink -> WS.WebSockets p ()
-receiveMessage state sink = flip WS.catchWsError catchDisconnect $ do
-    rawMsg <- WS.receiveData 
+receiveMessage :: W.Protocol p => MVar ServerState -> ClientSink -> W.WebSockets p ()
+receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
+    rawMsg <- W.receiveData 
     liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
     receiveMessage state sink
   where
     catchDisconnect e = case fromException e of
-        Just WS.ConnectionClosed -> do 
+        Just W.ConnectionClosed -> do 
             liftIO $ putStrLn  "connection closed"
             return ()
         _ -> do 
             liftIO $ putStrLn "Uncaught Error"
             return ()
-
-
-
 
 main :: IO ()
 main = httpServe simpleConfig $ site 
