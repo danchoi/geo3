@@ -50,8 +50,7 @@ wsApplication state rq = do
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
-    sinks <- liftIO $ readMVar state
-    liftIO $ putStrLn $ "Create client " 
+    liftIO $ putStrLn $ "Creating client " 
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
