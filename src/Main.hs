@@ -42,8 +42,12 @@ type ServerState = [ClientSink]
 addClientSink :: ClientSink -> ServerState -> ServerState
 addClientSink c s = c:s 
 
-removeClientSink :: ClientSink -> ServerState -> ServerState
-removeClientSink = undefined
+removeClientSink :: ClientSink -> MVar ServerState -> IO ()
+removeClientSink c state = do
+    modifyMVar_ state $ \s -> do
+      let s' = filter (/= c) s
+      return s'
+    return ()
 
 broadcast :: Text -> ServerState -> IO ()
 broadcast message clients = do
@@ -73,6 +77,7 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     catchDisconnect e = case fromException e of
         Just W.ConnectionClosed -> do 
             liftIO $ putStrLn  "connection closed"
+            liftIO $ removeClientSink sink state
             return ()
         _ -> do 
             liftIO $ putStrLn "Uncaught Error"
