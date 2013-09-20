@@ -57,7 +57,11 @@ wsApplication state ch rq = do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
-    liftIO (forkIO (readChan ch >>= putStrLn))
+    liftIO $ forkIO $ do 
+      x <- readChan ch 
+      putStrLn $ "Read chan: " ++ x
+      W.send x
+      return ()
     receiveMessage state sink
 
 receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
@@ -66,14 +70,6 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
     liftIO $ putStrLn "Getline"
     -- read input from channel
-    z <- liftIO (isEOF)
-    if (not z) 
-      then do
-        x <- liftIO getLine
-        liftIO $ putStrLn $ "Gotline: " ++ x
-        W.send $ W.textData $ T.pack $ "Gotline: " ++ x
-      else  return ()
-
     receiveMessage state sink
   where
     catchDisconnect e = case fromException e of
