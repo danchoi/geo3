@@ -2,7 +2,7 @@
 
 module Main where
 
-import Control.Monad (when)
+import Control.Monad (when, forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
 import Control.Concurrent
@@ -45,6 +45,11 @@ addClientSink c s = c:s
 removeClientSink :: ClientSink -> ServerState -> ServerState
 removeClientSink = undefined
 
+broadcast :: Text -> ServerState -> IO ()
+broadcast message clients = do
+    T.putStrLn message
+    forM_ clients $ \sink -> W.sendSink sink $ W.textData message
+
 wsApplication :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 wsApplication state rq = do
     W.acceptRequest rq
@@ -61,8 +66,8 @@ wsApplication state rq = do
 receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     rawMsg <- W.receiveData 
-    liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
-    -- read input from channel
+    liftIO $ readMVar state >>= broadcast rawMsg 
+    liftIO (putStrLn $ "received data: " ++ (T.unpack rawMsg))
     receiveMessage state sink
   where
     catchDisconnect e = case fromException e of
@@ -83,3 +88,24 @@ site s = ifTop (serveFile "public/index.html") <|>
     route [ ("ws", runWebSocketsSnap $ wsApplication s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
+
+{-
+
+http://hackage.haskell.org/packages/archive/websockets/0.6.0.3/doc/html/Network-WebSockets.html
+
+In some cases, you want to escape from the WebSockets monad and send data to the websocket from different threads. To this end, the getSink method is provided. The next example spawns a thread which continuously spams the client in another thread:
+
+ import Control.Concurrent (forkIO)
+ import Control.Monad (forever)
+ import Control.Monad.Trans (liftIO)
+ import Network.WebSockets
+ import qualified Data.Text as T
+ 
+ spam :: TextProtocol p => WebSockets p ()
+ spam = do
+     sink <- getSink
+     _ <- liftIO $ forkIO $ forever $
+         sendSink sink $ textData (T.pack "SPAM SPAM SPAM!")
+     sendTextData (T.pack "Hello world!")
+
+-}
