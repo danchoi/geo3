@@ -62,7 +62,6 @@ receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     rawMsg <- W.receiveData 
     liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
-    liftIO $ putStrLn "Getline"
     -- read input from channel
     receiveMessage state sink
   where

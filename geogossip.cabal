@@ -10,6 +10,7 @@ Category: Web
 License:             MIT
 License-file:        LICENSE
 Cabal-Version: >= 1.4
+
 Executable geogossip
   Hs-Source-Dirs: src
   main-is: Main.hs
@@ -27,4 +28,20 @@ Executable geogossip
     mtl, 
     snap-core,
     snap-server
+
+Executable wsclient
+  Hs-Source-Dirs: src
+  main-is: Client.hs
+  Build-Depends: 
+    base,
+    ghc-prim,
+    text,
+    websockets,
+    aeson,
+    bytestring,
+    transformers >= 0.3.0.0,
+    containers >= 0.4.2.1,
+    time >= 1.4,
+    mtl
+
 
