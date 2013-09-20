@@ -2,9 +2,11 @@
 
 module Main where
 
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
-import Control.Concurrent (MVar, newMVar, readMVar, modifyMVar_)
+import Control.Concurrent
+import Control.Concurrent.Chan
 import Control.Exception (fromException)
 
 import Data.Text (Text)
@@ -20,6 +22,7 @@ import Snap.Util.FileServe
 
 import Network.WebSockets.Snap 
 import qualified Network.WebSockets as W
+import System.IO (isEOF, stdin)
 
 simpleConfig :: Config m a
 simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
@@ -43,9 +46,8 @@ addClientSink c s = c:s
 removeClientSink :: ClientSink -> ServerState -> ServerState
 removeClientSink = undefined
 
-
-wsApplication :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
-wsApplication state rq = do
+wsApplication :: MVar ServerState -> Chan String -> W.Request -> W.WebSockets W.Hybi10 ()
+wsApplication state ch rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
@@ -55,6 +57,7 @@ wsApplication state rq = do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
+    liftIO (forkIO (readChan ch >>= putStrLn))
     receiveMessage state sink
 
 receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
@@ -62,9 +65,15 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     rawMsg <- W.receiveData 
     liftIO (putStrLn $ "receiveData: " ++ (T.unpack rawMsg))
     liftIO $ putStrLn "Getline"
-    x <- liftIO getLine
-    liftIO $ putStrLn $ "Gotline: " ++ x
-    W.send $ W.textData $ T.pack $ "Gotline: " ++ x
+    -- read input from channel
+    z <- liftIO (isEOF)
+    if (not z) 
+      then do
+        x <- liftIO getLine
+        liftIO $ putStrLn $ "Gotline: " ++ x
+        W.send $ W.textData $ T.pack $ "Gotline: " ++ x
+      else  return ()
+
     receiveMessage state sink
   where
     catchDisconnect e = case fromException e of
@@ -75,11 +84,23 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
             liftIO $ putStrLn "Uncaught Error"
             return ()
 
-main :: IO ()
-main = httpServe simpleConfig $ site 
+readInput ch = do
+  eof <- isEOF
+  when (not eof) $ do
+    x <- getLine
+    putStrLn $ "Gotline: " ++ x ++ " Writing to chan"
+    writeChan ch x
+  readInput ch
 
-site :: Snap ()
-site = ifTop (serveFile "public/index.html") <|> 
-    route [ ("ws", liftIO (newMVar []) >>= runWebSocketsSnap . wsApplication) ] <|>
+main :: IO ()
+main = do
+  serverState <- newMVar []
+  ch <- newChan
+  forkIO $ readInput ch
+  httpServe simpleConfig $ site serverState ch
+
+site :: MVar ServerState -> Chan String -> Snap ()
+site s ch = ifTop (serveFile "public/index.html") <|> 
+    route [ ("ws", (runWebSocketsSnap $ wsApplication s ch)) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
