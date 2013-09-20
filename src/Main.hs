@@ -6,7 +6,6 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
 import Control.Concurrent
-import Control.Concurrent.Chan
 import Control.Exception (fromException)
 
 import Data.Text (Text)
