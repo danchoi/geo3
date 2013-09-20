@@ -46,8 +46,8 @@ addClientSink c s = c:s
 removeClientSink :: ClientSink -> ServerState -> ServerState
 removeClientSink = undefined
 
-wsApplication :: MVar ServerState -> Chan String -> W.Request -> W.WebSockets W.Hybi10 ()
-wsApplication state ch rq = do
+wsApplication :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
+wsApplication state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
@@ -57,11 +57,6 @@ wsApplication state ch rq = do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
-    liftIO $ forkIO $ do 
-      x <- readChan ch 
-      putStrLn $ "Read chan: " ++ x
-      W.send x
-      return ()
     receiveMessage state sink
 
 receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
@@ -80,23 +75,13 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
             liftIO $ putStrLn "Uncaught Error"
             return ()
 
-readInput ch = do
-  eof <- isEOF
-  when (not eof) $ do
-    x <- getLine
-    putStrLn $ "Gotline: " ++ x ++ " Writing to chan"
-    writeChan ch x
-  readInput ch
-
 main :: IO ()
 main = do
   serverState <- newMVar []
-  ch <- newChan
-  forkIO $ readInput ch
-  httpServe simpleConfig $ site serverState ch
+  httpServe simpleConfig $ site serverState 
 
-site :: MVar ServerState -> Chan String -> Snap ()
-site s ch = ifTop (serveFile "public/index.html") <|> 
-    route [ ("ws", (runWebSocketsSnap $ wsApplication s ch)) ] <|>
+site :: MVar ServerState -> Snap ()
+site s = ifTop (serveFile "public/index.html") <|> 
+    route [ ("ws", runWebSocketsSnap $ wsApplication s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
