@@ -5,4 +5,22 @@ contains( <LatLng> latlng )	Boolean	Returns true if the rectangle contains the g
 
 loop through
 
+control language
+- person moved to latLng
+- bounds stay on clientside
+- when person messages send latlng again
+  - drawing person idempotent
+
+map moved to LatLng(42.35556, -71.09369) 
+- if "map" is turned into unique name?
+- let user choose name, and then couple with a invisible random number
+
+move map to enter chat
+
+dan 42.35556 -71,090123 12 connected
+dan 42.35556 -71,090123 12 said: "..." 
+dan 42.35556 -71,090123 13 moved
+dan disconnected
+dan renamed tom 
+
 
