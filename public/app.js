@@ -44,7 +44,7 @@ map.on('moveend', function(e) {
   var c = map.getCenter(),
       b = map.getBounds();
   console.log("map moved to " + c.toString());
-  printBounds(b);
+  //  printBounds(b);
 
 });
 
