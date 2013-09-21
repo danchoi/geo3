@@ -33,8 +33,21 @@ L.tileLayer('http://{s}.tile.cloudmade.com/' + API_KEY + '/997/256/{z}/{x}/{y}.p
     maxZoom: 18
 }).addTo(map);
 
+function printBounds(b) {
+  var sw = b.getSouthWest(),
+      se = b.getSouthEast(),
+      ne = b.getNorthEast(),
+      nw = b.getNorthWest();
+  console.log([sw,se,ne,nw].toString());
+}
+map.on('moveend', function(e) {
+  var c = map.getCenter(),
+      b = map.getBounds();
+  console.log("map moved to " + c.toString());
+  printBounds(b);
 
-map.doubleClickZoom.disable();
+});
+
 
 var svg = d3.select(map.getPanes().overlayPane).
             append("svg").
