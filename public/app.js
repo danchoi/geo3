@@ -19,8 +19,8 @@ $(document).ready(function() {
   startWebSocket();
 });
 
-var map = L.map('map', { dragging: false,
-                         zoomControl: false,
+var map = L.map('map', { dragging: true,
+                         zoomControl: true,
                          zoomAnimation: false,
                          scrollWheelZoom: false,
                          doubleClickZoom: false,
