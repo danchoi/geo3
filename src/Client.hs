@@ -1,5 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{-
+
+For testing the protocol 
+
+-}
 import Control.Monad (forever)
 import Control.Concurrent (forkIO)
 import Control.Monad.Trans (liftIO)

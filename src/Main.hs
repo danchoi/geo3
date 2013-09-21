@@ -2,7 +2,7 @@
 
 module Main where
 
-import Control.Monad (when, forM_)
+import Control.Monad (when, forM_, forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
 import Control.Concurrent
@@ -70,7 +70,7 @@ wsApplication state rq = do
 receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
     rawMsg <- W.receiveData 
-    liftIO $ readMVar state >>= broadcast rawMsg 
+    -- liftIO $ readMVar state >>= broadcast rawMsg 
     liftIO (putStrLn $ "received data: " ++ (T.unpack rawMsg))
     receiveMessage state sink
   where
@@ -86,6 +86,13 @@ receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
 main :: IO ()
 main = do
   serverState <- newMVar []
+  forkIO $ forever $ do
+    eof <- isEOF
+    when (not eof) $ do
+      line <- getLine 
+      putStrLn $ "Gotline " ++ line
+      readMVar serverState >>= broadcast (T.pack line)
+  putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
 
 site :: MVar ServerState -> Snap ()

@@ -17,10 +17,13 @@ map moved to LatLng(42.35556, -71.09369)
 
 move map to enter chat
 
-dan 42.35556 -71,090123 12 connected
-dan 42.35556 -71,090123 12 said: "..." 
-dan 42.35556 -71,090123 13 moved
+dan 42.35556 -71,090123 connected
+dan 42.35556 -71,090123 said: "..." 
+dan 42.35556 -71,090123 moved
 dan disconnected
 dan renamed tom 
 
 
+hover over cirlces to see name
+
+When user opens page replay list n interactions
