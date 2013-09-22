@@ -54,13 +54,14 @@ broadcast message clients = do
     T.putStrLn message
     forM_ clients $ \sink -> W.sendSink sink $ W.textData message
 
-wsApplication :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
-wsApplication state rq = do
+websocketServer :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
+websocketServer state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
     liftIO $ putStrLn $ "Creating client " 
+    -- TODO gen anon default name
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
@@ -97,7 +98,7 @@ main = do
 
 site :: MVar ServerState -> Snap ()
 site s = ifTop (serveFile "public/index.html") <|> 
-    route [ ("ws", runWebSocketsSnap $ wsApplication s) ] <|>
+    route [ ("ws", runWebSocketsSnap $ websocketServer s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
 
