@@ -25,7 +25,7 @@ parseRename = do
   n' <- parseName
   return $ Rename n n' 
 
--- dan moves to 42.1231232 -71.123
+-- dan moves to 42.1231232 -71.1231231
 parseLocate = 
   Locate <$> (parseName <* string " moves to ") <*> ((,) <$> double <*> (char ' ' *> double))
 
