@@ -13,6 +13,11 @@ function startWebSocket() {
   };
 };
 
+/* Important to prevent accmulation of ghost websockets */
+$(window).unload(function() {
+  if (websocket) websocket.close();
+  return;
+});
 
 
 $(document).ready(function() {
