@@ -63,6 +63,7 @@ instance ToJSON Event where
 instance ToJSON ClientError where
   toJSON (ClientError t) = object ["error" .= t]
 
+
 {- Dev -}
 
 {- parser test function for development -}
