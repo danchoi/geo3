@@ -28,15 +28,10 @@ data Event = Rename Name Name
 
 eventParser :: Parser Event
 eventParser = parseRename <|> parseLocate <|> parseChat
-
 name = takeWhile1 isAlphaNum
-
 latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
-
 parseRename = Rename <$> name <* string " rename to " <*> name
-
 parseLocate = Locate <$> (name <* string " loc ") <*> latLng
-
 parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
 
 {- Examples
@@ -50,7 +45,6 @@ parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeT
 
 -}
 
-
 {- Logic -}
 
 -- Starting simple, we just transform the data type into JSON to broadcast
@@ -61,8 +55,6 @@ instance ToJSON Event where
   toJSON (Chat n l t) = object ["t" .= ("chat" :: Text), "name" .= n, "loc" .= l, "text" .= t]
   toJSON (Connect n l) = object ["t" .= ("connect" :: Text), "name" .= n, "loc" .= l]
   toJSON (Disconnect n) = object ["t" .= ("disconnect" :: Text), "name" .= n]
-
-
 
 {- Dev -}
 
