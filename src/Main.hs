@@ -137,6 +137,7 @@ main = do
     when (not eof) $ do
       line <- getLine 
       putStrLn $ "Gotline " ++ line
+      -- TODO parse into message type
       broadcast (T.pack line) serverState
   putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
