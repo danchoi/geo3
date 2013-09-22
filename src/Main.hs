@@ -73,7 +73,7 @@ websocket state rq = do
 receiveMessage :: Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
     m <- W.receiveData 
-    -- parse m here
+    -- TODO prefix with name and parse m here
     liftIO $ readMVar state >>= broadcast m 
     liftIO (putStrLn $ "received data: " ++ (T.unpack m))
     receiveMessage name state sink

@@ -7,10 +7,13 @@ import Data.Char
 import qualified Data.Text as T
 
 type LatLng = (Double, Double)
+type Name = Text
 
-data Event = Rename Text Text
-           | Locate Text LatLng
-           | Chat Text Text
+data Event = Rename Name Name
+           | Locate Name LatLng
+           | Chat Name Text
+           | Connect Name LatLng
+           | Disconnect Name
            deriving (Show, Eq)
 
 eventParser :: Parser Event
