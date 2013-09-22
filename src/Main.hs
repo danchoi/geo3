@@ -150,13 +150,6 @@ process m s = do
 main :: IO ()
 main = do
   serverState <- newMVar M.empty
-  forkIO $ forever $ do
-    eof <- isEOF
-    when (not eof) $ do
-      line <- getLine 
-      putStrLn $ "Gotline " ++ line
-      -- TODO parse into message type
-      broadcast (T.pack line) serverState
   putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
 
