@@ -20,7 +20,7 @@ import Snap.Core
 import Snap.Http.Server.Config
 import Snap.Http.Server 
 import Snap.Util.FileServe
-
+import Data.Maybe (fromJust)
 import Network.WebSockets.Snap 
 import qualified Network.WebSockets as W
 import System.IO (isEOF, stdin)
@@ -54,6 +54,10 @@ removeClientSink (name,_) state = do
       let s' = M.delete name s
       return s'
     return ()
+
+debugClients :: MVar ServerState -> IO ()
+debugClients st = liftIO $ do
+  readMVar st >>= putStrLn . show . map fst . M.elems
 
 broadcast :: Text -> MVar ServerState -> IO ()
 broadcast message s = do
@@ -109,14 +113,19 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
         liftIO (putStrLn $ "received data: " ++ (T.unpack m))
         -- prepend name to message before sending it to parser (and logger) TODO
         case (parseMessage $ name `T.append` " " `T.append` m) of 
-          Right  m' -> do 
+          Right m'@(Rename n n') -> do 
             t <- liftIO getZonedTime
             process (t,m') state 
+            receiveMessage state (n',sink)
+          Right m' -> do 
+            t <- liftIO getZonedTime
+            process (t,m') state 
+            receiveMessage state c
           Left x -> do 
             liftIO . T.putStrLn $ "Could not parse message: " `T.append` m
             W.send (W.textData . encodeToText $ ClientError "Could not parse message")
-            return ()
-        receiveMessage state c
+            receiveMessage state c
+
   where
     catchDisconnect e = case fromException e of
       Just W.ConnectionClosed -> do 
@@ -132,9 +141,23 @@ encodeToText :: ToJSON a => a -> Text
 encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
 
 {- Core processing -}
-
 process :: EventWithTime -> MVar ServerState -> W.WebSockets W.Hybi10 ()
-process x s = liftIO $ broadcast (encodeToText x) s
+process x@(_,(Rename n n')) st = do
+  liftIO $ do 
+    debugClients st
+    modifyMVar_ st $ \s -> do
+      case (M.lookup n s) of
+        Nothing -> return s
+        Just (_, sink) -> do 
+          let s' = M.delete n s
+          let s'' = M.insert n' (n',sink) s'
+          return s''
+    debugClients st
+    broadcast (encodeToText x) st
+
+process x s = do
+  liftIO $ broadcast (encodeToText x) s
+
 
 main :: IO ()
 main = do
