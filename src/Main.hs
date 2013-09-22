@@ -6,7 +6,8 @@ import Control.Monad (when, forM_, forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
 import Control.Concurrent
-import Control.Exception (fromException)
+import Control.Exception 
+import System.IO (stderr, hPutStrLn)
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -56,10 +57,20 @@ removeClientSink (name,_) state = do
       return s'
     return ()
 
-broadcast :: Text -> ServerState -> IO ()
+broadcast :: Text -> MVar ServerState -> IO ()
 broadcast message s = do
-    T.putStrLn message
-    forM_ (M.elems s) $ \(_, sink) -> W.sendSink sink $ W.textData message
+  T.putStrLn message
+  currentState <- readMVar s
+  forM_ (M.elems currentState) $ \c@(name, sink) -> do 
+    Control.Exception.catch 
+      (W.sendSink sink $ W.textData message) 
+      (\e -> do 
+        let err = show (e :: IOException)
+        System.IO.hPutStrLn stderr 
+          ("Caught exception in broadcast while sending to "++T.unpack name++": " ++ err)
+        removeClientSink c s
+        return ()
+        )
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
@@ -67,7 +78,7 @@ websocket state rq = do
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
-    let name = "anon"
+    name <- liftIO (readMVar state >>= \s -> return $ "anon" `T.append` (T.pack . show . length . M.keys $ s))
     liftIO $ putStrLn $ "Creating client " 
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink (name,sink) s
@@ -96,9 +107,9 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
   where
     catchDisconnect e = case fromException e of
       Just W.ConnectionClosed -> do 
-          liftIO $ putStrLn  "connection closed"
+          liftIO $ T.putStrLn $ "connection closed by " `T.append` name
           liftIO $ removeClientSink c state
-          liftIO $ readMVar state >>= broadcast (encodeToText (Disconnect name))
+          liftIO $ broadcast (encodeToText (Disconnect name)) state
       _ -> do 
           liftIO $ putStrLn "Uncaught Error"
 
@@ -110,24 +121,26 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 
 process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 process m@(Rename n n') s = do
-  liftIO $ readMVar s >>= broadcast (encodeToText m)
+  liftIO $ broadcast (encodeToText m) s
 
 {-
 process (Locate n l) s = undefined
 process (Chat n l t) s = undefined
 
 -}
-process m s = liftIO $ readMVar s >>= broadcast (encodeToText m)
+process m s = liftIO $ broadcast (encodeToText m) s
 
 main :: IO ()
 main = do
   serverState <- newMVar M.empty
+  {-
   forkIO $ forever $ do
     eof <- isEOF
     when (not eof) $ do
       line <- getLine 
       putStrLn $ "Gotline " ++ line
-      readMVar serverState >>= broadcast (T.pack line)
+      broadcast (T.pack line) serverState
+  -}
   putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
 
