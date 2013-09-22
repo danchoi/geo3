@@ -77,9 +77,7 @@ makeName m k = makeName2 k
     makeName2 x = 
       case (M.lookup x m) of
         Nothing -> x
-        -- TODO use parsec
         Just _ -> makeName2 (incName x) 
-        
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
@@ -163,6 +161,7 @@ site :: MVar ServerState -> Snap ()
 site s = ifTop (serveFile "public/index.html") <|> 
     route [ ("ws", runWebSocketsSnap $ websocket s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
+
 
 
 {-
