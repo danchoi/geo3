@@ -66,8 +66,7 @@ broadcast message s = do
       (W.sendSink sink $ W.textData message) 
       (\e -> do 
         let err = show (e :: IOException)
-        putStrLn
-          ("Caught exception in broadcast while sending to "++T.unpack name++": " ++ err)
+        putStrLn ("Caught exception in broadcast while sending to "++T.unpack name++": " ++ err)
         removeClientSink c s
         return ()
         )
@@ -88,11 +87,17 @@ websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     sink <- W.getSink
-    liftIO $ W.sendSink sink $ W.textData $ T.pack "hello handshake"
     name <- liftIO $ modifyMVar state $ \s -> do
-        let name = makeName s "anon"
-        let s' = addClientSink (name,sink) s
-        return (s', name)
+        -- see if the sink already exists; else add
+        let existingSink = filter (\(name, sink') -> sink' == sink) (M.elems s)
+        -- putStrLn $ show $ length existingSink
+        case existingSink of
+          ((name', sink'):_) ->
+            return (s, name')
+          otherwise -> do
+            let name = makeName s "anon"
+            let s' = addClientSink (name,sink) s
+            return (s', name)
     liftIO $ putStrLn $ "Creating client " ++ (T.unpack name)
     W.send . W.textData $ name
     receiveMessage state (name,sink)
