@@ -23,6 +23,8 @@ import Network.WebSockets.Snap
 import qualified Network.WebSockets as W
 import System.IO (isEOF, stdin)
 
+import qualified Data.Map as M
+
 import Core
 
 simpleConfig :: Config m a
@@ -38,23 +40,23 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     bsFromString = TE.encodeUtf8 . T.pack
 
 
-type ClientSink = W.Sink W.Hybi10
-type ServerState = [ClientSink]
+type ClientSink = (Name, W.Sink W.Hybi10)
+type ServerState = M.Map Name ClientSink
 
 addClientSink :: ClientSink -> ServerState -> ServerState
-addClientSink c s = c:s 
+addClientSink (name,sink) s = M.insert name (name,sink) s
 
 removeClientSink :: ClientSink -> MVar ServerState -> IO ()
-removeClientSink c state = do
+removeClientSink (name,_) state = do
     modifyMVar_ state $ \s -> do
-      let s' = filter (/= c) s
+      let s' = M.delete name s
       return s'
     return ()
 
 broadcast :: Text -> ServerState -> IO ()
-broadcast message clients = do
+broadcast message s = do
     T.putStrLn message
-    forM_ clients $ \sink -> W.sendSink sink $ W.textData message
+    forM_ (M.elems s) $ \(_, sink) -> W.sendSink sink $ W.textData message
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
@@ -64,11 +66,12 @@ websocket state rq = do
     sink <- W.getSink
     liftIO $ putStrLn $ "Creating client " 
     -- TODO gen anon default name and store value in closure in call to receiveMessage
+    let name = "anon"
     liftIO $ modifyMVar_ state $ \s -> do
-        let s' = addClientSink sink s
+        let s' = addClientSink (name,sink) s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
-    receiveMessage "anon" state sink
+    receiveMessage name state (name,sink)
 
 receiveMessage :: Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
@@ -89,7 +92,7 @@ receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
 
 main :: IO ()
 main = do
-  serverState <- newMVar []
+  serverState <- newMVar M.empty
   forkIO $ forever $ do
     eof <- isEOF
     when (not eof) $ do
