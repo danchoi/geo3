@@ -144,7 +144,6 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 process :: EventWithTime -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 process x@(_,(Rename n n')) st = do
   liftIO $ do 
-    debugClients st
     modifyMVar_ st $ \s -> do
       case (M.lookup n s) of
         Nothing -> return s
@@ -152,7 +151,6 @@ process x@(_,(Rename n n')) st = do
           let s' = M.delete n s
           let s'' = M.insert n' (n',sink) s'
           return s''
-    debugClients st
     broadcast (encodeToText x) st
 
 process x s = do
