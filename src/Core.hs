@@ -9,8 +9,10 @@ import qualified Data.Text as T
 import Data.Aeson
 
 
--- lat, lng, zoom
+{- lat, lng, zoom -}
 type LatLng = (Double, Double, Int)
+
+{- alphaNumeric strings only -}
 type Name = Text
 
 data Event = Rename Name Name
