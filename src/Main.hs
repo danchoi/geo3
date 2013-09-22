@@ -76,7 +76,6 @@ websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
-    -- W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
     name <- liftIO (readMVar state >>= \s -> return $ "anon" `T.append` (T.pack . show . length . M.keys $ s))
     liftIO $ putStrLn $ "Creating client " 
