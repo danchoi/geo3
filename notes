@@ -27,3 +27,18 @@ dan renamed tom
 hover over cirlces to see name
 
 When user opens page replay list n interactions
+
+
+
+
+
+websocket.send("rename to tom");
+true
+onmessage:{"to":"tom","from":"anon","t":"rename"} app.js:9
+websocket.send("loc 42 23 12");
+true
+onmessage:{"name":"anon","loc":[42.0,23.0,12],"t":"loc"} app.js:9
+websocket.send("chat 42 23 12 hello");
+true
+onmessage:{"name":"anon","text":"hello","loc":[42.0,23.0,12],"t":"chat"} 
+
