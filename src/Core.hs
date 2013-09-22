@@ -42,9 +42,7 @@ parseLocate = Locate <$> (name <* string " loc ") <*> latLng
 
 parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
 
-{- 
-
-  Examples
+{- Examples
 
   ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
   Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
