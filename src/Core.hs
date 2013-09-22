@@ -4,6 +4,7 @@ import Data.Attoparsec.Text
 import Control.Applicative
 import Data.Text (Text)
 import Data.Char
+import Data.List (partition)
 import Data.Either
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -63,6 +64,17 @@ instance ToJSON Event where
 instance ToJSON ClientError where
   toJSON (ClientError t) = object ["error" .= t]
 
+-- used to generate unique names; increments number at end of name
+incName :: Text -> Text
+incName x = 
+    let s = T.unpack x
+        s' = reverse s
+        (ds, remainder) = partition isDigit s'
+        ds' = if null ds 
+              then "1"
+              else (show $ (((read.reverse $ ds) :: Int) + 1))
+        str = (reverse remainder) ++ ds'
+     in T.pack str
 
 {- Dev -}
 

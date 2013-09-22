@@ -80,7 +80,6 @@ makeName m k = makeName2 k
         -- TODO use parsec
         Just _ -> makeName2 (incName x) 
         
-incName x = x `T.append` "1"
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
@@ -108,6 +107,7 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
     case dm of 
       (W.ControlMessage x@(W.Close _)) -> do
         liftIO $ putStrLn $ "received control mesage " ++ (show x)
+        liftIO $ removeClientSink c state
       (W.DataMessage (W.Text x)) -> do
         let m = TE.decodeUtf8 . B.concat . BL.toChunks $ x
         liftIO (putStrLn $ "received data: " ++ (T.unpack m))
