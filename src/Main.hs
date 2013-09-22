@@ -61,19 +61,20 @@ websocket state rq = do
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
     liftIO $ putStrLn $ "Creating client " 
-    -- TODO gen anon default name
+    -- TODO gen anon default name and store value in closure in call to receiveMessage
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink sink s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
-    receiveMessage state sink
+    receiveMessage "anon" state sink
 
-receiveMessage ::  MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
-receiveMessage state sink = flip W.catchWsError catchDisconnect $ do
-    rawMsg <- W.receiveData 
-    -- liftIO $ readMVar state >>= broadcast rawMsg 
-    liftIO (putStrLn $ "received data: " ++ (T.unpack rawMsg))
-    receiveMessage state sink
+receiveMessage ::  Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
+receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
+    m <- W.receiveData 
+    -- parse m here
+    liftIO $ readMVar state >>= broadcast m 
+    liftIO (putStrLn $ "received data: " ++ (T.unpack m))
+    receiveMessage name state sink
   where
     catchDisconnect e = case fromException e of
         Just W.ConnectionClosed -> do 
