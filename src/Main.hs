@@ -8,7 +8,7 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Exception 
 import System.IO (stderr, hPutStrLn)
-
+import Data.Time.LocalTime
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -123,7 +123,8 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
       Just W.ConnectionClosed -> do 
           liftIO $ T.putStrLn $ "connection closed by " `T.append` name
           liftIO $ removeClientSink c state
-          liftIO $ broadcast (encodeToText (Disconnect name)) state
+          t <- liftIO getZonedTime
+          liftIO $ broadcast (encodeToText (t, (Disconnect name))) state
       _ -> do 
           liftIO $ putStrLn "Uncaught Error"
 
@@ -135,13 +136,16 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 
 process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 process m@(Rename n n') s = do
-  liftIO $ broadcast (encodeToText m) s
+  t <- liftIO getZonedTime
+  liftIO $ broadcast (encodeToText (t,m)) s
 {-
 process (Locate n l) s = undefined
 process (Chat n l t) s = undefined
 
 -}
-process m s = liftIO $ broadcast (encodeToText m) s
+process m s = do 
+  t <- liftIO getZonedTime
+  liftIO $ broadcast (encodeToText (t,m)) s
 
 main :: IO ()
 main = do
