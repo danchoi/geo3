@@ -73,25 +73,28 @@ broadcast message s = do
         )
 
 makeName :: M.Map Text a -> Text -> Text
-makeName m k = k'
+makeName m k = makeName2 k 
   where 
-    k' = makeName k
-    makeName x = 
-      case (M.lookup k m) of
-        Nothing -> k
-        Just _ -> makeName (k `T.append` "1")
+    makeName2 x = 
+      case (M.lookup x m) of
+        Nothing -> x
+        -- TODO use parsec
+        Just _ -> makeName2 (incName x) 
+        
+incName x = x `T.append` "1"
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     sink <- W.getSink
-    liftIO $ putStrLn $ "Creating client " 
+    liftIO $ W.sendSink sink $ W.textData $ T.pack "hello handshake"
     name <- liftIO $ modifyMVar state $ \s -> do
-        let name = makeName s "Anon"
+        let name = makeName s "anon"
         let s' = addClientSink (name,sink) s
-        W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return (s', name)
+    liftIO $ putStrLn $ "Creating client " ++ (T.unpack name)
+    W.send . W.textData $ name
     receiveMessage state (name,sink)
 
 receiveMessage :: MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
