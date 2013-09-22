@@ -18,16 +18,19 @@ eventParser = parseRename <|> parseLocate <|> parseChat
 
 parseName = takeWhile1 isAlphaNum
 
--- rename dan tom
-parseRename = Rename <$> (string "rename" >> char ' ' *> parseName) <*> (char ' ' *> parseName) 
+-- dan changes to tom
+parseRename = do 
+  n <- parseName
+  string " changes to "
+  n' <- parseName
+  return $ Rename n n' 
 
--- locate dan 42.1231232 -71.123
-parseLocate = do
-  string "locate" 
-  Locate <$> (char ' ' *> parseName) <*> ((,) <$> (char ' ' *> double) <*> (char ' ' *> double))
+-- dan moves to 42.1231232 -71.123
+parseLocate = 
+  Locate <$> (parseName <* string " moves to ") <*> ((,) <$> double <*> (char ' ' *> double))
 
--- chat dan hello cambridge!
-parseChat = Chat <$> (string "chat" >> char ' ' *> parseName <* char ' ') <*> takeTill (== '\n') 
+-- dan says hello cambridge!
+parseChat = Chat <$> (parseName <* string " says ") <*> takeText
 
 -- for development
 test :: String -> Either String Event
