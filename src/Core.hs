@@ -6,6 +6,9 @@ import Data.Text (Text)
 import Data.Char
 import qualified Data.Text as T
 
+import Data.Aeson
+
+
 type LatLng = (Double, Double)
 type Name = Text
 
@@ -38,3 +41,7 @@ parseChat = Chat <$> (parseName <* string " says ") <*> takeText
 -- for development
 test :: String -> Either String Event
 test s = parseOnly eventParser (T.pack s)
+
+
+-- Aeson 
+

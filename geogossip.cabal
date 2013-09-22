@@ -22,6 +22,7 @@ Executable geogossip
     websockets >= 0.6.0.3,
     websockets-snap,
     aeson,
+    vector,
     bytestring,
     transformers >= 0.3.0.0,
     containers >= 0.4.2.1,
