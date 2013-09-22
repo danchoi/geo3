@@ -16,7 +16,6 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Lazy          as BL
 import Data.List (foldl')
-
 import Snap.Core
 import Snap.Http.Server.Config
 import Snap.Http.Server 
@@ -42,7 +41,6 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     ip = setBind (bsFromString "127.0.0.1")
     verbose = setVerbose True
     bsFromString = TE.encodeUtf8 . T.pack
-
 
 type ClientSink = (Name, W.Sink W.Hybi10)
 type ServerState = M.Map Name ClientSink
@@ -112,7 +110,8 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
         -- prepend name to message before sending it to parser (and logger) TODO
         case (parseMessage $ name `T.append` " " `T.append` m) of 
           Right  m' -> do 
-            process m' state 
+            t <- liftIO getZonedTime
+            process (t,m') state 
           Left x -> do 
             liftIO . T.putStrLn $ "Could not parse message: " `T.append` m
             W.send (W.textData . encodeToText $ ClientError "Could not parse message")
@@ -134,18 +133,8 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 
 {- Core processing -}
 
-process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
-process m@(Rename n n') s = do
-  t <- liftIO getZonedTime
-  liftIO $ broadcast (encodeToText (t,m)) s
-{-
-process (Locate n l) s = undefined
-process (Chat n l t) s = undefined
-
--}
-process m s = do 
-  t <- liftIO getZonedTime
-  liftIO $ broadcast (encodeToText (t,m)) s
+process :: EventWithTime -> MVar ServerState -> W.WebSockets W.Hybi10 ()
+process x s = liftIO $ broadcast (encodeToText x) s
 
 main :: IO ()
 main = do
