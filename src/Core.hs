@@ -9,6 +9,7 @@ import Data.Either
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Aeson
+import Data.Time.LocalTime
 
 {- Types -}
 
@@ -17,14 +18,13 @@ type LatLng = (Double, Double, Int)
 
 {- alphaNumeric strings only -}
 type Name = Text
-
+data EventWithTime = EventWithTime ZonedTime Event
 data Event = Rename Name Name
            | Locate Name LatLng
            | Chat Name LatLng Text
            | Connect Name LatLng
            | Disconnect Name
            deriving (Show, Eq)
-
 data ClientError = ClientError Text
 
 {- Parsers -}
@@ -97,3 +97,14 @@ ghci> testJSON "dan loc 42.1231232 -71.1231231 12"
 
 -}
 
+
+
+{- References
+
+  Data.Time.LocalTime 
+    http://www.haskell.org/ghc/docs/6.12.2/html/libraries/time-1.1.4/Data-Time-LocalTime.html#t%3ALocalTime
+
+  Data.Time.Clock
+    http://www.haskell.org/ghc/docs/6.12.2/html/libraries/time-1.1.4/Data-Time-Clock.html#t%3AUTCTime
+
+-}
