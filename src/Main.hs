@@ -54,8 +54,8 @@ broadcast message clients = do
     T.putStrLn message
     forM_ clients $ \sink -> W.sendSink sink $ W.textData message
 
-websocketServer :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
-websocketServer state rq = do
+websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
+websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
@@ -98,7 +98,7 @@ main = do
 
 site :: MVar ServerState -> Snap ()
 site s = ifTop (serveFile "public/index.html") <|> 
-    route [ ("ws", runWebSocketsSnap $ websocketServer s) ] <|>
+    route [ ("ws", runWebSocketsSnap $ websocket s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
 
