@@ -136,7 +136,6 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 process m@(Rename n n') s = do
   liftIO $ broadcast (encodeToText m) s
-
 {-
 process (Locate n l) s = undefined
 process (Chat n l t) s = undefined

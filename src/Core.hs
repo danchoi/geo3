@@ -22,7 +22,6 @@ type EventWithTime = (ZonedTime, Event)
 data Event = Rename Name Name
            | Locate Name LatLng
            | Chat Name LatLng Text
-           | Connect Name LatLng
            | Disconnect Name
            deriving (Show, Eq, Read)
 data ClientError = ClientError Text
@@ -55,11 +54,10 @@ parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeT
 -- Starting simple, we just transform the data type into JSON to broadcast
 
 instance ToJSON Event where
-  toJSON (Rename n n') = object ["t" .= ("rename" :: Text), "from" .= n, "to" .= n']
-  toJSON (Locate n l) = object ["t" .= ("loc" :: Text), "name" .= n, "loc" .= l]
-  toJSON (Chat n l t) = object ["t" .= ("chat" :: Text), "name" .= n, "loc" .= l, "text" .= t]
-  toJSON (Connect n l) = object ["t" .= ("connect" :: Text), "name" .= n, "loc" .= l]
-  toJSON (Disconnect n) = object ["t" .= ("disconnect" :: Text), "name" .= n]
+  toJSON (Rename n n') = object ["from" .= n, "name" .= n']
+  toJSON (Locate n l) = object ["name" .= n, "loc" .= l]
+  toJSON (Chat n l t) = object ["name" .= n, "loc" .= l, "text" .= t]
+  toJSON (Disconnect n) = object ["disconnect" .= n]
 
 instance ToJSON ClientError where
   toJSON (ClientError t) = object ["error" .= t]
@@ -116,5 +114,10 @@ ghci> testJSON "dan loc 42.1231232 -71.1231231 12"
 read "(Locate \"dan\" (42.1231232,-71.1231231,12))"
 read "(\"2013-09-22 17:04:58 EDT\", (Locate \"dan\" (42.1231232,-71.1231231,12)))" :: (ZonedTime, Event)
 ((read "2013-09-22 17:04:58 EDT" :: ZonedTime), (Locate (T.pack "dan") (42.1231232,-71.1231231,12)))
+
+["2013-09-22T17:04:58-0400",{"name":"dan","loc":[42.1231232,-71.1231231,12],"t":"loc"}]
+
+
+
 
 -}
