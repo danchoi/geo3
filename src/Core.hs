@@ -9,12 +9,13 @@ import qualified Data.Text as T
 import Data.Aeson
 
 
-type LatLng = (Double, Double)
+-- lat, lng, zoom
+type LatLng = (Double, Double, Int)
 type Name = Text
 
 data Event = Rename Name Name
            | Locate Name LatLng
-           | Chat Name Text
+           | Chat Name LatLng Text
            | Connect Name LatLng
            | Disconnect Name
            deriving (Show, Eq)
@@ -22,26 +23,33 @@ data Event = Rename Name Name
 eventParser :: Parser Event
 eventParser = parseRename <|> parseLocate <|> parseChat
 
-parseName = takeWhile1 isAlphaNum
+name = takeWhile1 isAlphaNum
 
--- dan changes to tom
-parseRename = do 
-  n <- parseName
-  string " changes to "
-  n' <- parseName
-  return $ Rename n n' 
+latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
 
--- dan moves to 42.1231232 -71.1231231
-parseLocate = 
-  Locate <$> (parseName <* string " moves to ") <*> ((,) <$> double <*> (char ' ' *> double))
+parseRename = Rename <$> name <* string " rename to " <*> name
 
--- dan says hello cambridge!
-parseChat = Chat <$> (parseName <* string " says ") <*> takeText
+parseLocate = Locate <$> (name <* string " loc ") <*> latLng
 
--- for development
+parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
+
+{- test function for development -}
 test :: String -> Either String Event
 test s = parseOnly eventParser (T.pack s)
 
 
--- Aeson 
 
+{- 
+
+Examples
+
+ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
+Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
+ghci> test "dan rename to tom"
+Right (Rename "dan" "tom")
+ghci> test "dan loc 42.1231232 -71.1231231 12"
+Right (Locate "dan" (42.1231232,-71.1231231,12))
+ghci> 
+
+
+-}
