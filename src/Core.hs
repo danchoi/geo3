@@ -88,11 +88,13 @@ testJSON s = case (testParse s) of
 {- Examples:
 
 ghci> testJSON "dan rename to tom"
-{"to":"tom","from":"dan","t":"rename"}
+{"name":"tom","from":"dan"}
+
 ghci> testJSON "dan chat 42.123 -71.1233 12 hello cambridge!"
-{"name":"dan","text":"hello cambridge!","loc":[42.123,-71.1233,12],"t":"chat"}
+{"name":"dan","text":"hello cambridge!","loc":[42.123,-71.1233,12]}
+
 ghci> testJSON "dan loc 42.1231232 -71.1231231 12"
-{"name":"dan","loc":[42.1231232,-71.1231231,12],"t":"loc"}
+{"name":"dan","loc":[42.1231232,-71.1231231,12]}
 
 -}
 
