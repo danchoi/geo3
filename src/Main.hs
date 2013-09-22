@@ -23,6 +23,8 @@ import Network.WebSockets.Snap
 import qualified Network.WebSockets as W
 import System.IO (isEOF, stdin)
 
+import Core
+
 simpleConfig :: Config m a
 simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     base = [hostName, accessLog, errorLog, locale, port, ip, verbose]
@@ -68,7 +70,7 @@ websocket state rq = do
         return s'
     receiveMessage "anon" state sink
 
-receiveMessage ::  Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
+receiveMessage :: Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
 receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
     m <- W.receiveData 
     -- parse m here
