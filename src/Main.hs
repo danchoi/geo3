@@ -66,7 +66,7 @@ broadcast message s = do
       (W.sendSink sink $ W.textData message) 
       (\e -> do 
         let err = show (e :: IOException)
-        System.IO.hPutStrLn stderr 
+        putStrLn
           ("Caught exception in broadcast while sending to "++T.unpack name++": " ++ err)
         removeClientSink c s
         return ()
@@ -76,7 +76,7 @@ websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
-    W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
+    -- W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
     name <- liftIO (readMVar state >>= \s -> return $ "anon" `T.append` (T.pack . show . length . M.keys $ s))
     liftIO $ putStrLn $ "Creating client " 
@@ -133,14 +133,12 @@ process m s = liftIO $ broadcast (encodeToText m) s
 main :: IO ()
 main = do
   serverState <- newMVar M.empty
-  {-
   forkIO $ forever $ do
     eof <- isEOF
     when (not eof) $ do
       line <- getLine 
       putStrLn $ "Gotline " ++ line
       broadcast (T.pack line) serverState
-  -}
   putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
 
