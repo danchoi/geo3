@@ -9,7 +9,6 @@ import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Aeson
 
-
 {- Types -}
 
 {- lat, lng, zoom -}
@@ -24,8 +23,6 @@ data Event = Rename Name Name
            | Connect Name LatLng
            | Disconnect Name
            deriving (Show, Eq)
-
-
 
 {- Parsers -}
 
