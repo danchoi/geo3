@@ -47,10 +47,11 @@ function printBounds(b) {
 }
 map.on('moveend', function(e) {
   var c = map.getCenter(),
-      b = map.getBounds();
-  console.log("map moved to " + c.toString());
-  //  printBounds(b);
-
+      lat = c.lat,
+      lng = c.lng,
+      z = map.getZoom(),
+      loc = [lat,lng,z].join(' ');
+  websocket.send("loc " + loc);
 });
 
 

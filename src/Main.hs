@@ -152,7 +152,6 @@ process x@(_,(Rename n n')) st = do
           let s'' = M.insert n' (n',sink) s'
           return s''
     broadcast (encodeToText x) st
-
 process x s = do
   liftIO $ broadcast (encodeToText x) s
 
