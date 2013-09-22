@@ -24,7 +24,11 @@ data Event = Rename Name Name
            | Disconnect Name
            deriving (Show, Eq)
 
+data ClientError = ClientError Text
+
 {- Parsers -}
+
+parseMessage = parseOnly eventParser 
 
 eventParser :: Parser Event
 eventParser = parseRename <|> parseLocate <|> parseChat
@@ -55,6 +59,9 @@ instance ToJSON Event where
   toJSON (Chat n l t) = object ["t" .= ("chat" :: Text), "name" .= n, "loc" .= l, "text" .= t]
   toJSON (Connect n l) = object ["t" .= ("connect" :: Text), "name" .= n, "loc" .= l]
   toJSON (Disconnect n) = object ["t" .= ("disconnect" :: Text), "name" .= n]
+
+instance ToJSON ClientError where
+  toJSON (ClientError t) = object ["error" .= t]
 
 {- Dev -}
 

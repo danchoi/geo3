@@ -12,6 +12,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString               as B
+import qualified Data.ByteString.Lazy          as BL
 import Data.List (foldl')
 
 import Snap.Core
@@ -24,6 +26,7 @@ import qualified Network.WebSockets as W
 import System.IO (isEOF, stdin)
 
 import qualified Data.Map as M
+import Data.Aeson (encode, ToJSON)
 
 import Core
 
@@ -64,31 +67,57 @@ websocket state rq = do
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
     W.spawnPingThread 30 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
-    liftIO $ putStrLn $ "Creating client " 
-    -- TODO gen anon default name and store value in closure in call to receiveMessage
     let name = "anon"
+    liftIO $ putStrLn $ "Creating client " 
     liftIO $ modifyMVar_ state $ \s -> do
         let s' = addClientSink (name,sink) s
         W.sendSink sink $ W.textData $ T.pack "hello handshake"
         return s'
-    receiveMessage name state (name,sink)
+    receiveMessage state (name,sink)
 
-receiveMessage :: Text -> MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
-receiveMessage name state sink = flip W.catchWsError catchDisconnect $ do
-    m <- W.receiveData 
-    -- TODO prefix with name and parse m here
-    liftIO $ readMVar state >>= broadcast m 
-    liftIO (putStrLn $ "received data: " ++ (T.unpack m))
-    receiveMessage name state sink
+receiveMessage :: MVar ServerState -> ClientSink -> W.WebSockets W.Hybi10 ()
+receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
+    dm <- W.receive
+    case dm of 
+      (W.ControlMessage x@(W.Close _)) -> do
+        liftIO $ putStrLn $ "received control mesage " ++ (show x)
+      (W.DataMessage (W.Text x)) -> do
+        let m = TE.decodeUtf8 . B.concat . BL.toChunks $ x
+        liftIO (putStrLn $ "received data: " ++ (T.unpack m))
+        -- prepend name to message before sending it to parser (and logger) TODO
+        case (parseMessage $ name `T.append` " " `T.append` m) of 
+          Right  m' -> do 
+            process m' state 
+          Left x -> do 
+            liftIO . T.putStrLn $ "Could not parse message: " `T.append` m
+            W.send (W.textData . encodeToText $ ClientError "Could not parse message")
+            return ()
+        receiveMessage state c
   where
     catchDisconnect e = case fromException e of
-        Just W.ConnectionClosed -> do 
-            liftIO $ putStrLn  "connection closed"
-            liftIO $ removeClientSink sink state
-            return ()
-        _ -> do 
-            liftIO $ putStrLn "Uncaught Error"
-            return ()
+      Just W.ConnectionClosed -> do 
+          liftIO $ putStrLn  "connection closed"
+          liftIO $ removeClientSink c state
+          liftIO $ readMVar state >>= broadcast (encodeToText (Disconnect name))
+      _ -> do 
+          liftIO $ putStrLn "Uncaught Error"
+
+{- helper to encode to JSON as Text -}
+encodeToText :: ToJSON a => a -> Text
+encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
+
+{- Core processing -}
+
+process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
+process m@(Rename n n') s = do
+  liftIO $ readMVar s >>= broadcast (encodeToText m)
+
+{-
+process (Locate n l) s = undefined
+process (Chat n l t) s = undefined
+
+-}
+process m s = liftIO $ readMVar s >>= broadcast (encodeToText m)
 
 main :: IO ()
 main = do
