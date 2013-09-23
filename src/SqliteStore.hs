@@ -6,6 +6,7 @@ import Database.HDBC.Sqlite3
 import Data.Text (append, pack)
 
 
+-- note: event log will be parsed back into data types by attoparsec
 textLoc lat lng zoom = 
   (pack.show $ lat) `append` " " `append`
   (pack.show $ lng) `append` " " `append`
