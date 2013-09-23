@@ -132,7 +132,6 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
             liftIO . T.putStrLn $ "Could not parse message: " `T.append` m
             W.send (W.textData . encodeToText $ ClientError "Could not parse message")
             receiveMessage state c
-
   where
     catchDisconnect e = case fromException e of
       Just W.ConnectionClosed -> do 
@@ -142,10 +141,6 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
           liftIO $ broadcast (encodeToText (t, (Disconnect name))) state
       _ -> do 
           liftIO $ putStrLn "Uncaught Error"
-
-{- helper to encode to JSON as Text -}
-encodeToText :: ToJSON a => a -> Text
-encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
 
 {- Core processing -}
 process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
@@ -166,6 +161,12 @@ site s = ifTop (serveFile "public/index.html") <|>
     route [ ("ws", runWebSocketsSnap $ websocket s) ] <|>
     route [ ("", (serveDirectory "public")) ] 
 
+
+
+{- helper to encode to JSON as Text -}
+
+encodeToText :: ToJSON a => a -> Text
+encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
 
 
 {-
