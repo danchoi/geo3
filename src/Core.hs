@@ -35,8 +35,8 @@ class ChatStore a where
   getCurrentState :: IConnection a => a -> IO CurrentState
   getStateDiff :: IConnection a => a -> UTCTime -> IO StateDiff
   insertEvent :: IConnection a => a -> Event -> IO ()
-  generateName :: IConnection a => a -> MVar b -> IO Text
-  renameUser :: IConnection a => Text -> MVar b -> IO Text -- may return incremented name
+  generateName :: IConnection a => a -> MVar b -> IO Name
+  renameUser :: IConnection a => Text -> MVar b -> IO Name -- may return incremented name
   authorizeUser :: IConnection a => a -> Sha1 -> Name -> IO Bool
 
 {- Logic -}
