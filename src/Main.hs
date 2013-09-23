@@ -123,13 +123,10 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
                   let s' = M.delete n s
                   let s'' = M.insert n'' (n'',sink) s'
                   return (s'', n'')
-            t <- liftIO getZonedTime
-            process (t, (Rename n newName)) state 
+            process (Rename n newName) state 
             receiveMessage state (newName, sink)
-
           Right m' -> do 
-            t <- liftIO getZonedTime
-            process (t,m') state 
+            process m' state 
             receiveMessage state c
           Left x -> do 
             liftIO . T.putStrLn $ "Could not parse message: " `T.append` m
@@ -151,9 +148,11 @@ encodeToText :: ToJSON a => a -> Text
 encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
 
 {- Core processing -}
-process :: EventWithTime -> MVar ServerState -> W.WebSockets W.Hybi10 ()
+process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 
-process x s = liftIO $ broadcast (encodeToText x) s
+process x s = liftIO $ do
+    t <- getZonedTime 
+    broadcast (encodeToText x) s
 
 
 main :: IO ()
