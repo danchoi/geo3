@@ -37,7 +37,7 @@ class ChatStore a where
   insertEvent :: IConnection a => a -> Event -> IO ()
   generateName :: IConnection a => a -> MVar b -> IO Text
   renameUser :: IConnection a => Text -> MVar b -> IO Text -- may return incremented name
-  authorizeUser :: IConnection a => a -> Sha1 -> Text -> IO Bool
+  authorizeUser :: IConnection a => a -> Sha1 -> Name -> IO Bool
 
 {- Logic -}
 
