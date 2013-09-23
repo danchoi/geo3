@@ -26,6 +26,12 @@ data Event = Rename Name Name
            deriving (Show, Eq, Read)
 data ClientError = ClientError Text
 
+type Post = Text -- change later
+data CurrentState = CurrentState [User] [Post] ZonedTime
+data StateDiff = StateDiff [Event] 
+
+
+
 {- Parsers -}
 
 parseMessage = parseOnly clientMessage 
