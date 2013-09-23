@@ -10,13 +10,9 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Aeson
 import Data.Time.LocalTime
 
-{- Types -}
 
-{- lat, lng, zoom -}
-type LatLng = (Double, Double, Int)
-
-{- alphaNumeric strings only -}
-type Name = Text
+type LatLng = (Double, Double, Int) -- lat, lng, zoom 
+type Name = Text -- alphaNumeric strings only 
 type EventWithTime = (ZonedTime, Event) 
 data Event = Rename Name Name
            | Locate Name LatLng
