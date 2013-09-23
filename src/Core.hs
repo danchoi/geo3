@@ -12,6 +12,7 @@ import Data.Aeson
 import Data.Time.LocalTime
 import Database.HDBC
 import Data.Time
+import Control.Concurrent 
 
 type LatLng = (Double, Double, Int) -- lat, lng, zoom 
 type Name = Text -- alphaNumeric strings only 
@@ -35,6 +36,7 @@ class ChatStore a where
   getCurrentState :: IConnection a => a -> IO CurrentState
   getStateDiff :: IConnection a => a -> UTCTime -> IO StateDiff
   insertEvent :: IConnection a => a -> Event -> IO ()
+  generateName :: IConnection a => a -> MVar b -> IO Text
 
 {- Logic -}
 

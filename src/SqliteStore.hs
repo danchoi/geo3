@@ -4,6 +4,7 @@ import Core
 import Database.HDBC
 import Database.HDBC.Sqlite3
 import Data.Text (append, pack)
+import Control.Concurrent 
 
 
 -- note: event log will be parsed back into data types by attoparsec
@@ -32,6 +33,7 @@ instance ChatStore Connection where
 
   insertEvent conn _ = undefined
 
+  generateName conn lock = undefined
 
 test = do
   c <- connectSqlite3 "db/test.db"
