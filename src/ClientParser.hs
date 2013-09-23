@@ -8,15 +8,15 @@ import Core
 
 {- Parsers -}
 
-parseMessage = parseOnly clientMessage 
+runParser = parseOnly clientMessage 
 
 clientMessage :: Parser Event
-clientMessage = parseRename <|> parseLocate <|> parseChat
+clientMessage = rename <|> locate <|> chat
 name = takeWhile1 isAlphaNum
 latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
-parseRename = Rename <$> name <* string " rename to " <*> name
-parseLocate = Locate <$> (name <* string " loc ") <*> latLng
-parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
+rename = Rename <$> name <* string " rename to " <*> name
+locate = Locate <$> (name <* string " loc ") <*> latLng
+chat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
 
 {- Examples
 
