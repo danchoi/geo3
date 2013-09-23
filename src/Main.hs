@@ -15,7 +15,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Lazy          as BL
-import Data.List (foldl')
+import Data.List (foldl', nubBy)
 import Snap.Core
 import Snap.Http.Server.Config
 import Snap.Http.Server 
@@ -63,7 +63,7 @@ broadcast :: Text -> MVar ServerState -> IO ()
 broadcast message s = do
   T.putStrLn message
   currentState <- readMVar s
-  forM_ (M.elems currentState) $ \c@(name, sink) -> do 
+  forM_ (nubBy myNubFn . M.elems $ currentState) $ \c@(name, sink) -> do 
     Control.Exception.catch 
       (W.sendSink sink $ W.textData message) 
       (\e -> do 
@@ -72,6 +72,7 @@ broadcast message s = do
         removeClientSink c s
         return ()
         )
+  where myNubFn c1 c2 = snd c1 == snd c2  -- unique sinks
 
 makeName :: M.Map Text a -> Text -> Text
 makeName m k = makeName2 k 
@@ -113,10 +114,19 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
         liftIO (putStrLn $ "received data: " ++ (T.unpack m))
         -- prepend name to message before sending it to parser (and logger) TODO
         case (parseMessage $ name `T.append` " " `T.append` m) of 
-          Right m'@(Rename n n') -> do 
+          Right (Rename n n') -> do 
+            newName <- liftIO $ modifyMVar state $ \s -> do
+              let n'' = makeName s n'
+              case (M.lookup n s) of
+                Nothing -> return (s, n'') -- shouldn't happen!
+                Just (_, sink) -> do 
+                  let s' = M.delete n s
+                  let s'' = M.insert n'' (n'',sink) s'
+                  return (s'', n'')
             t <- liftIO getZonedTime
-            process (t,m') state 
-            receiveMessage state (n',sink)
+            process (t, (Rename n newName)) state 
+            receiveMessage state (newName, sink)
+
           Right m' -> do 
             t <- liftIO getZonedTime
             process (t,m') state 
@@ -142,18 +152,8 @@ encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode
 
 {- Core processing -}
 process :: EventWithTime -> MVar ServerState -> W.WebSockets W.Hybi10 ()
-process x@(_,(Rename n n')) st = do
-  liftIO $ do 
-    modifyMVar_ st $ \s -> do
-      case (M.lookup n s) of
-        Nothing -> return s
-        Just (_, sink) -> do 
-          let s' = M.delete n s
-          let s'' = M.insert n' (n',sink) s'
-          return s''
-    broadcast (encodeToText x) st
-process x s = do
-  liftIO $ broadcast (encodeToText x) s
+
+process x s = liftIO $ broadcast (encodeToText x) s
 
 
 main :: IO ()
