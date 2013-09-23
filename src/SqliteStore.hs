@@ -34,6 +34,7 @@ instance ChatStore Connection where
   insertEvent conn _ = undefined
 
   generateName conn lock = undefined
+  renameUser conn lock = undefined
 
 test = do
   c <- connectSqlite3 "db/test.db"
