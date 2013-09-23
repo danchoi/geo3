@@ -19,7 +19,7 @@ Executable geogossip
     ghc-prim,
     text,
     attoparsec,
-    websockets >= 0.6.0.3,
+    websockets >= 0.7.1.1,
     websockets-snap,
     aeson,
     vector,
