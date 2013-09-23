@@ -1,17 +1,24 @@
-var websocket;
+var websocket, name;
 function startWebSocket() {
   var webSocketURL = 'ws://localhost:9160/ws'; 
   websocket = new WebSocket(webSocketURL); 
   websocket.onopen = function(event){
     console.log("Connected to server " );
-  };
-  websocket.onmessage = function(event){
-    console.log("onmessage:" + event.data);
-  };
-  websocket.onclose = function(event){
-    console.log("connection closed. reconnecting.");
-    // try to reopen
-    startWebSocket();
+    if (name) 
+      websocket.send("rename to " + name);
+
+    websocket.onmessage = function(event){
+      console.log("onmessage:" + event.data);
+      if (/^\w+$/.test(event.data)) {
+        name = event.data;
+      } 
+    };
+    websocket.onclose = function(event){
+      console.log("connection closed. reconnecting.");
+      // try to reopen
+      setTimeout(startWebSocket, 1000);
+    };
+
   };
 };
 

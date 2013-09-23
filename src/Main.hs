@@ -43,28 +43,28 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     bsFromString = TE.encodeUtf8 . T.pack
 
 type ClientSink = (Name, W.Sink W.Hybi10)
-type ServerState = M.Map Name ClientSink
+type ServerState = [ClientSink]
 
 addClientSink :: ClientSink -> ServerState -> ServerState
-addClientSink (name,sink) s = M.insert name (name,sink) s
+addClientSink (name,sink) s = (name,sink):s
 
 removeClientSink :: ClientSink -> MVar ServerState -> IO ()
 removeClientSink (name,_) state = do
     modifyMVar_ state $ \s -> do
-      let s' = M.delete name s
+      let s' = filter (\x -> fst x /= name) s
       return s'
     return ()
 
 debugClients :: MVar ServerState -> IO ()
 debugClients st = liftIO $ do
-  readMVar st >>= putStrLn . show . map fst . M.elems
+  readMVar st >>= putStrLn . show . map fst 
 
 broadcast :: Text -> MVar ServerState -> IO ()
 broadcast message s = do
   T.putStrLn message
   currentState <- readMVar s
   debugClients s
-  forM_ (nubBy myNubFn . M.elems $ currentState) $ \c@(name, sink) -> do 
+  forM_ (nubBy myNubFn currentState) $ \c@(name, sink) -> do 
     Control.Exception.catch 
       (W.sendSink sink $ W.textData message) 
       (\e -> do 
@@ -75,13 +75,13 @@ broadcast message s = do
         )
   where myNubFn c1 c2 = snd c1 == snd c2  -- unique sinks
 
-makeName :: M.Map Text a -> Text -> Text
+makeName :: ServerState -> Text -> Text
 makeName m k = makeName2 k 
   where 
     makeName2 x = 
-      case (M.lookup x m) of
-        Nothing -> x
-        Just _ -> makeName2 (incName x) 
+      case (filter (\y -> fst y == x) m) of
+        [] -> x
+        otherwise -> makeName2 (incName x) 
 
 websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
@@ -90,7 +90,7 @@ websocket state rq = do
     sink <- W.getSink
     name <- liftIO $ modifyMVar state $ \s -> do
         -- see if the sink already exists; else add
-        let existingSink = filter (\(name, sink') -> sink' == sink) (M.elems s)
+        let existingSink = filter (\(name, sink') -> sink' == sink) s
         -- putStrLn $ show $ length existingSink
         case existingSink of
           ((name', sink'):_) ->
@@ -118,12 +118,11 @@ receiveMessage state c@(name,sink) = flip W.catchWsError catchDisconnect $ do
           Right (Rename n n') -> do 
             newName <- liftIO $ modifyMVar state $ \s -> do
               let n'' = makeName s n'
-              case (M.lookup n s) of
-                Nothing -> return (s, n'') -- shouldn't happen!
-                Just (_, sink) -> do 
-                  let s' = M.delete n s
-                  let s'' = M.insert n'' (n'',sink) s'
-                  return (s'', n'')
+              case (filter (\x -> fst x == n) s) of
+                ((_,sink):_) -> do 
+                  let s' = (n'',sink):(filter ((/= n) . fst) s)
+                  return (s', n'')
+                _ -> return (s, n'') -- shouldn't happen!
             process (Rename n newName) state 
             receiveMessage state (newName, sink)
           Right m' -> do 
@@ -153,7 +152,7 @@ process x s = liftIO $ do
 
 main :: IO ()
 main = do
-  serverState <- newMVar M.empty
+  serverState <- newMVar []
   putStrLn "starting server"
   httpServe simpleConfig $ site serverState 
 
