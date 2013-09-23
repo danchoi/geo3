@@ -28,10 +28,10 @@ data ClientError = ClientError Text
 
 {- Parsers -}
 
-parseMessage = parseOnly eventParser 
+parseMessage = parseOnly clientMessage 
 
-eventParser :: Parser Event
-eventParser = parseRename <|> parseLocate <|> parseChat
+clientMessage :: Parser Event
+clientMessage = parseRename <|> parseLocate <|> parseChat
 name = takeWhile1 isAlphaNum
 latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
 parseRename = Rename <$> name <* string " rename to " <*> name
@@ -79,7 +79,7 @@ incName x =
 
 {- parser test function for development -}
 testParse :: String -> Either String Event
-testParse s = parseOnly eventParser (T.pack s)
+testParse s = parseOnly clientMessage (T.pack s)
 
 testJSON s = case (testParse s) of
   Left x -> putStrLn x
