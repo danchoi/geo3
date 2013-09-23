@@ -21,6 +21,9 @@ data Event = Rename Name Name
            | Chat Name LatLng Text
            | Disconnect Name
            deriving (Show, Eq, Read)
+
+type UserHash = Text
+data AuthorizeEvent = AuthorizeEvent UserHash Event
 data ClientError = ClientError Text
 
 data User = User Name LatLng
