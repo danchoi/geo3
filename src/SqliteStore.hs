@@ -6,6 +6,7 @@ import Database.HDBC.Sqlite3
 instance ChatStore Connection where
   getCurrentState = undefined
   getStateDiff = undefined
+  insertEvent = undefined
 
 
 
