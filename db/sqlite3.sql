@@ -1,7 +1,8 @@
+
 create table events (
   event_user text,
   event_log text,
-  event_created_at datetime
+  event_created_at datetime default current_timestamp
 );
 
 create table users (
@@ -16,5 +17,6 @@ create table posts (
   post_lat real,
   post_lng real,
   post_zoom num,
-  post_created_t datetime
+  post_created_t datetime default current_timestamp
 );
+

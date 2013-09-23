@@ -3,18 +3,31 @@ module SqliteStore where
 import Core 
 import Database.HDBC
 import Database.HDBC.Sqlite3
+import Data.Text (append, pack)
+
+
+textLoc lat lng zoom = 
+  (pack.show $ lat) `append` " " `append`
+  (pack.show $ lng) `append` " " `append`
+  (pack.show $ zoom)
+
 
 instance ChatStore Connection where
   getCurrentState = undefined
   getStateDiff = undefined
 
   insertEvent conn (Locate n (lat,lng,zoom)) = do
-    quickQuery' conn 
-      "insert or replace into users (user_name, user_lat, user_lng, user_zoom) values \
-      \ (?, ?, ?, ?)"
-      [toSql n, toSql lat, toSql lng, toSql zoom]
-    commit conn
-    return ()
+      quickQuery' conn 
+        "insert or replace into users (user_name, user_lat, user_lng, user_zoom) values \
+        \ (?, ?, ?, ?)"
+        [toSql n, toSql lat, toSql lng, toSql zoom]
+      quickQuery' conn
+        "insert into events (event_user, event_log) values (?,?)"
+        [toSql n, toSql logString]
+      commit conn
+      return ()
+    where logString = n `append` " loc " `append` (textLoc lat lng zoom)
+           
 
   insertEvent conn _ = undefined
 
@@ -31,7 +44,7 @@ test = do
 create table events (
   event_user text,
   event_log text,
-  event_created_at datetime
+  event_created_at datetime default current_timestamp
 );
 
 create table users (
@@ -46,7 +59,7 @@ create table posts (
   post_lat real,
   post_lng real,
   post_zoom num,
-  post_created_t datetime
+  post_created_t datetime default current_timestamp
 );
 
 -}
