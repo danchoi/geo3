@@ -64,3 +64,12 @@ create table posts (
 
 -}
 
+
+{-
+
+[choi@sparta geo3]$ sqlite3 db/test.db "select * from events"
+dan|dan loc 42.2 -71.2 13|2013-09-23 18:44:07
+[choi@sparta geo3]$ sqlite3 db/test.db "select * from users"
+dan|42.2|-71.2|13
+
+-}
