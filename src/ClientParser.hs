@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ClientParser where
 import Data.Attoparsec.Text
+import Control.Applicative
+import Data.Char (isAlphaNum)
+import qualified Data.Text as T
 import Core
 
 {- Parsers -}
@@ -31,5 +34,3 @@ parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeT
 testParse :: String -> Either String Event
 testParse s = parseOnly clientMessage (T.pack s)
 
-main = do 
-  putStrLn "hello"

@@ -25,10 +25,10 @@ data Event = Rename Name Name
            deriving (Show, Eq, Read)
 data ClientError = ClientError Text
 
-type User = Text
-type Post = Text -- change later
+data User = User Name LatLng
+data Post = Post User Text ZonedTime
 data CurrentState = CurrentState [User] [Post] ZonedTime
-data StateDiff = StateDiff [Event] 
+data StateDiff = StateDiff [Event] ZonedTime
 
 {- Logic -}
 
@@ -57,10 +57,10 @@ incName x =
      in T.pack str
 
 {- Dev -}
-testJSON s = case (testParse s) of
-  Left x -> putStrLn x
-  Right x -> B.putStrLn $ encode x
-
+-- testJSON s = case (testParse s) of
+--   Left x -> putStrLn x
+--   Right x -> B.putStrLn $ encode x
+-- 
 {- Examples:
 
 ghci> testJSON "dan rename to tom"
