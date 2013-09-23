@@ -32,8 +32,7 @@ instance ChatStore Connection where
            
 
   insertEvent conn _ = undefined
-
-  generateName conn lock = undefined
+  createUser conn lock = undefined
   renameUser conn lock = undefined
   authorizeUser conn hash name = undefined
 
