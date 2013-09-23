@@ -147,7 +147,7 @@ process :: Event -> MVar ServerState -> W.WebSockets W.Hybi10 ()
 
 process x s = liftIO $ do
     t <- getZonedTime 
-    broadcast (encodeToText x) s
+    broadcast (encodeToText (t, x)) s
 
 
 main :: IO ()
