@@ -46,5 +46,7 @@ Executable testCompile
     time >= 1.4,
     mtl,
     aeson,
-    attoparsec
+    attoparsec,
+    HDBC,
+    HDBC-sqlite3
 

@@ -10,6 +10,8 @@ import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Aeson
 import Data.Time.LocalTime
+import Database.HDBC
+import Data.Time
 
 type LatLng = (Double, Double, Int) -- lat, lng, zoom 
 type Name = Text -- alphaNumeric strings only 
@@ -25,6 +27,10 @@ data User = User Name LatLng
 data Post = Post User Text ZonedTime
 data CurrentState = CurrentState [User] [Post] ZonedTime
 data StateDiff = StateDiff [Event] ZonedTime
+
+class ChatStore a where
+  getCurrentState :: IConnection a => IO CurrentState
+  getStateDiff :: IConnection a => UTCTime -> IO StateDiff
 
 {- Logic -}
 
