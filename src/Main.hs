@@ -45,13 +45,16 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
 type ClientSink = (Name, W.Sink W.Hybi10)
 type ServerState = [ClientSink]
 
+-- This theoretically removes dup sinks for a particular client
+myNubFn c1 c2 = (snd c1 == snd c2) || (fst c1 == fst c2)  
+
 addClientSink :: ClientSink -> ServerState -> ServerState
-addClientSink (name,sink) s = (name,sink):s
+addClientSink (name,sink) s = (name,sink):(nubBy myNubFn s)
 
 removeClientSink :: ClientSink -> MVar ServerState -> IO ()
-removeClientSink (name,_) state = do
+removeClientSink (name,sink) state = do
     modifyMVar_ state $ \s -> do
-      let s' = filter (\x -> fst x /= name) s
+      let s' = filter (\x -> fst x /= name && snd x /= sink) s
       return s'
     return ()
 
@@ -73,7 +76,6 @@ broadcast message s = do
         removeClientSink c s
         return ()
         )
-  where myNubFn c1 c2 = snd c1 == snd c2  -- unique sinks
 
 makeName :: ServerState -> Text -> Text
 makeName m k = makeName2 k 

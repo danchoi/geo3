@@ -4,8 +4,7 @@ function startWebSocket() {
   websocket = new WebSocket(webSocketURL); 
   websocket.onopen = function(event){
     console.log("Connected to server " );
-    if (name) 
-      websocket.send("rename to " + name);
+    // if (name) websocket.send("rename to " + name);
 
     websocket.onmessage = function(event){
       console.log("onmessage:" + event.data);
