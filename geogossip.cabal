@@ -31,9 +31,9 @@ Cabal-Version: >= 1.4
 --     snap-core,
 --     snap-server
 -- 
-Executable wsclient
+Executable client
   Hs-Source-Dirs: src
-  main-is: Client.hs
+  main-is: ClientParser.hs
   Build-Depends: 
     base,
     ghc-prim,
@@ -44,6 +44,7 @@ Executable wsclient
     transformers >= 0.3.0.0,
     containers >= 0.4.2.1,
     time >= 1.4,
-    mtl
-
+    mtl,
+    aeson,
+    attoparsec
 

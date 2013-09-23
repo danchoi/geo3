@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core where
-import Data.Attoparsec.Text
 import Control.Applicative
 import Data.Text (Text)
 import Data.Char
@@ -26,34 +25,10 @@ data Event = Rename Name Name
            deriving (Show, Eq, Read)
 data ClientError = ClientError Text
 
+type User = Text
 type Post = Text -- change later
 data CurrentState = CurrentState [User] [Post] ZonedTime
 data StateDiff = StateDiff [Event] 
-
-
-
-{- Parsers -}
-
-parseMessage = parseOnly clientMessage 
-
-clientMessage :: Parser Event
-clientMessage = parseRename <|> parseLocate <|> parseChat
-name = takeWhile1 isAlphaNum
-latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
-parseRename = Rename <$> name <* string " rename to " <*> name
-parseLocate = Locate <$> (name <* string " loc ") <*> latLng
-parseChat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
-
-{- Examples
-
-  ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
-  Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
-  ghci> test "dan rename to tom"
-  Right (Rename "dan" "tom")
-  ghci> test "dan loc 42.1231232 -71.1231231 12"
-  Right (Locate "dan" (42.1231232,-71.1231231,12))
-
--}
 
 {- Logic -}
 
@@ -82,11 +57,6 @@ incName x =
      in T.pack str
 
 {- Dev -}
-
-{- parser test function for development -}
-testParse :: String -> Either String Event
-testParse s = parseOnly clientMessage (T.pack s)
-
 testJSON s = case (testParse s) of
   Left x -> putStrLn x
   Right x -> B.putStrLn $ encode x
