@@ -37,7 +37,7 @@ class ChatStore a where
   getStateDiff :: IConnection a => a -> UTCTime -> IO StateDiff
   insertEvent :: IConnection a => a -> Event -> IO ()
   generateName :: IConnection a => a -> MVar b -> IO Text
-  renameUser :: IConnection a => Text -> MVar b -> IO Text
+  renameUser :: IConnection a => Text -> MVar b -> IO Text -- may return incremented name
 
 {- Logic -}
 
