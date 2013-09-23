@@ -89,6 +89,8 @@ websocket :: MVar ServerState -> W.Request -> W.WebSockets W.Hybi10 ()
 websocket state rq = do
     W.acceptRequest rq
     W.getVersion >>= liftIO . putStrLn . ("Client version: " ++)
+    -- This produces the bug
+    -- W.spawnPingThread 10 :: W.WebSockets W.Hybi10 ()
     sink <- W.getSink
     name <- liftIO $ modifyMVar state $ \s -> do
         -- see if the sink already exists; else add
