@@ -31,9 +31,9 @@ Cabal-Version: >= 1.4
 --     snap-core,
 --     snap-server
 -- 
-Executable client
+Executable testCompile
   Hs-Source-Dirs: src
-  main-is: ClientParser.hs
+  main-is: Main2.hs
   Build-Depends: 
     base,
     ghc-prim,
