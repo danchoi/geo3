@@ -63,6 +63,7 @@ broadcast :: Text -> MVar ServerState -> IO ()
 broadcast message s = do
   T.putStrLn message
   currentState <- readMVar s
+  debugClients s
   forM_ (nubBy myNubFn . M.elems $ currentState) $ \c@(name, sink) -> do 
     Control.Exception.catch 
       (W.sendSink sink $ W.textData message) 
