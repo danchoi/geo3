@@ -3,13 +3,15 @@ function startWebSocket() {
   var webSocketURL = 'ws://localhost:9160/ws'; 
   websocket = new WebSocket(webSocketURL); 
   websocket.onopen = function(event){
-    console.log("Connected to server");
+    console.log("Connected to server " );
   };
   websocket.onmessage = function(event){
     console.log("onmessage:" + event.data);
   };
   websocket.onclose = function(event){
-    console.log("connection closed");
+    console.log("connection closed. reconnecting.");
+    // try to reopen
+    startWebSocket();
   };
 };
 

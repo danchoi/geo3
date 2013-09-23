@@ -96,9 +96,9 @@ websocket state rq = do
           ((name', sink'):_) ->
             return (s, name')
           otherwise -> do
-            let name = makeName s "anon"
-            let s' = addClientSink (name,sink) s
-            return (s', name)
+            let name'' = makeName s "anon"
+            let s' = addClientSink (name'',sink) s
+            return (s', name'')
     liftIO $ putStrLn $ "Creating client " ++ (T.unpack name)
     W.send . W.textData $ name
     receiveMessage state (name,sink)
