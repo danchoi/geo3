@@ -23,8 +23,7 @@ data Event = Rename Name Name
            | Disconnect Name
            deriving (Show, Eq, Read)
 
-type UserHash = Text
-data AuthorizeEvent = AuthorizeEvent UserHash Event
+type Sha1 = Text
 data ClientError = ClientError Text
 
 data User = User Name LatLng
@@ -38,6 +37,7 @@ class ChatStore a where
   insertEvent :: IConnection a => a -> Event -> IO ()
   generateName :: IConnection a => a -> MVar b -> IO Text
   renameUser :: IConnection a => Text -> MVar b -> IO Text -- may return incremented name
+  authorizeUser :: IConnection a => a -> Sha1 -> Text -> IO Bool
 
 {- Logic -}
 

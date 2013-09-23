@@ -35,6 +35,7 @@ instance ChatStore Connection where
 
   generateName conn lock = undefined
   renameUser conn lock = undefined
+  authorizeUser conn hash name = undefined
 
 test = do
   c <- connectSqlite3 "db/test.db"
