@@ -29,8 +29,8 @@ data CurrentState = CurrentState [User] [Post] ZonedTime
 data StateDiff = StateDiff [Event] ZonedTime
 
 class ChatStore a where
-  getCurrentState :: IConnection a => IO CurrentState
-  getStateDiff :: IConnection a => UTCTime -> IO StateDiff
+  getCurrentState :: IConnection a => a -> IO CurrentState
+  getStateDiff :: IConnection a => a -> UTCTime -> IO StateDiff
 
 {- Logic -}
 
