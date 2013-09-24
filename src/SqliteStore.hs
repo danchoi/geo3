@@ -13,12 +13,11 @@ textLoc lat lng zoom =
   (pack.show $ lng) `append` " " `append`
   (pack.show $ zoom)
 
-
 instance ChatStore Connection where
   getCurrentState = undefined
   getStateDiff = undefined
 
-  insertEvent conn (Locate n (lat,lng,zoom)) = do
+  insertEvent conn (Locate n (LatLng lat lng zoom)) = do
       quickQuery' conn 
         "insert or replace into users (user_name, user_lat, user_lng, user_zoom) values \
         \ (?, ?, ?, ?)"
@@ -40,7 +39,7 @@ test = do
   c <- connectSqlite3 "db/test.db"
   ts <- (getTables c )
   mapM_ (putStrLn . show) ts
-  insertEvent c (Locate "dan" (42.2,-71.2,13))
+  insertEvent c (Locate "dan" (LatLng 42.2 (-71.2) 13))
 
 
 {-

@@ -2,7 +2,7 @@
 module Core where
 import Control.Applicative
 import Data.Attoparsec.Text
-import Data.Text (Text)
+import Data.Text (Text, pack, append)
 import Data.Char
 import Data.List (partition)
 import Data.Either
@@ -14,7 +14,9 @@ import Database.HDBC
 import Data.Time
 import Control.Concurrent 
 
-type LatLng = (Double, Double, Int) -- lat, lng, zoom 
+data LatLng = LatLng Double Double Int -- lat, lng, zoom 
+    deriving (Show, Read, Eq)
+
 type Name = Text -- alphaNumeric strings only 
 type EventWithTime = (ZonedTime, Event) 
 data Event = Rename Name Name
@@ -42,6 +44,9 @@ class ChatStore a where
 {- Logic -}
 
 -- Starting simple, we just transform the data type into JSON to broadcast
+
+instance ToJSON LatLng  where
+  toJSON (LatLng lat lng zoom) = toJSON (lat, lng, zoom)
 
 instance ToJSON Event where
   toJSON (Rename n n') = object ["from" .= n, "name" .= n']
@@ -92,7 +97,7 @@ runParser = parseOnly clientMessage
 clientMessage :: Parser Event
 clientMessage = rename <|> locate <|> chat
 name = takeWhile1 isAlphaNum
-latLng = ((,,) <$> double <*> (char ' ' *> double)) <*> (char ' ' *> decimal)
+latLng = LatLng <$> double <*> (char ' ' *> double) <*> (char ' ' *> decimal)
 rename = Rename <$> name <* string " rename to " <*> name
 locate = Locate <$> (name <* string " loc ") <*> latLng
 chat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
@@ -111,9 +116,33 @@ chat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
 -}
 
 
+
 {- parser test function for development -}
 testParse :: String -> Either String Event
 testParse s = parseOnly clientMessage (T.pack s)
+
+
+{- Plain text representation of data types -}
+
+class SimpleRep a where
+  simpleTextRep :: a -> Text
+  simpleStringRep :: a -> String
+  simpleStringRep = T.unpack . simpleTextRep
+  
+instance SimpleRep LatLng where
+  simpleTextRep (LatLng lat lng zoom) = 
+    (pack.show $ lat) `append` " " `append`
+    (pack.show $ lng) `append` " " `append`
+    (pack.show $ zoom)
+
+instance SimpleRep Event where
+  simpleTextRep (Rename n n') = n `append` " rename to " `append` n'
+  simpleTextRep (Locate n l) = n `append` " loc " `append` (simpleTextRep l)
+  simpleTextRep (Chat n l t) = n `append` " chat " `append` (simpleTextRep l) 
+    `append` " " `append` t
+
+
+test2 = simpleTextRep (Chat "dan" (LatLng 1 2 3) "hello")
 
 
 
