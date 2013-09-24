@@ -34,12 +34,12 @@ data CurrentState = CurrentState [User] [Post] ZonedTime
 data StateDiff = StateDiff [Event] ZonedTime
 
 class ChatStore a where
-  getCurrentState :: IConnection a => a -> IO CurrentState
-  getStateDiff :: IConnection a => a -> UTCTime -> IO StateDiff
-  insertEvent :: IConnection a => a -> Event -> IO ()
-  createUser :: IConnection a => Text -> MVar b -> IO Name -- may return incremented name
-  renameUser :: IConnection a => Text -> MVar b -> IO Name -- may return incremented name
-  authorizeUser :: IConnection a => a -> Sha1 -> Name -> IO Bool
+  getCurrentState :: a -> IO CurrentState
+  getStateDiff :: a -> UTCTime -> IO StateDiff
+  insertEvent :: a -> Event -> IO ()
+  createUser :: a -> Text -> MVar b -> IO Name -- may return incremented name
+  renameUser :: a -> Text -> MVar b -> IO Name -- may return incremented name
+  authorizeUser :: a -> Sha1 -> Name -> IO Bool
 
 {- Logic -}
 
