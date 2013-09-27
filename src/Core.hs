@@ -14,6 +14,7 @@ import Data.Time
 import Data.UUID.V4
 import Data.UUID (toString, UUID)
 import System.Time
+import Data.Aeson hiding (Result, Success)
 
 data LatLng = LatLng {
     getLat :: Double, getLng :: Double, getZoom :: Int 
@@ -33,9 +34,17 @@ data ClientError = ClientError Text
 
 data Post = Post Session Text ZonedTime
 
+instance ToJSON Result where
+  toJSON Success = object ["success" .= ("ok" :: Text)]
+  toJSON (NewSessionInfo s uuid) = object ["session" .= s, "uuid" .= uuid]
+
 {- Client interaction parser -}
 
 runParser = parseOnly clientMessage 
+runAuthorizedParser = parseOnly authorizedClientMessage 
+
+authorizedClientMessage :: Parser (Text, Event)
+authorizedClientMessage = (,) <$> takeWhile1 (not.isSeparator) <*> (char ' ' *> clientMessage)
 
 clientMessage :: Parser Event
 clientMessage = newSession <|> rename <|> move <|> chat

@@ -56,10 +56,20 @@ site conn = ifTop (serveFile "public/index.html") <|>
     ] 
 
 procEvent conn = do
-    x <- readRequestBody (100000 :: Int64)
-    let event = runParser . lazyByteStringToText $ x
-    liftIO $ (putStrLn . show) event
-    writeLBS x
+  x <- readRequestBody (100000 :: Int64)
+  let m = runAuthorizedParser . lazyByteStringToText $ x
+  case m of 
+    Left err -> writeLBS . encode $ ("error","Failed to parse")
+    Right (uuid, event) -> do
+      case event of 
+        (NewSession _) -> do
+          res <-liftIO $ processEvent' conn event
+          writeLBS . encode $ res
+        otherwise -> do
+          -- Authorize the request:
+          -- Just check if the uuid exists TODO
+          res <- liftIO $ processEvent' conn event
+          writeLBS . encode $ res
 
 
 -- runs processEvent and outputs CSV

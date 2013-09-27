@@ -1,8 +1,14 @@
-$(document).ready(function() {
-  var data = "connect sara";
+
+
+function connect(name) {
+  var data = "- connect "+name;
   $.post("/events", data, function(data) {
     console.log(data); 
+    // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
   }); 
+
+}
+$(document).ready(function() {
 });
 
 var map = L.map('map', { dragging: true,
