@@ -15,7 +15,6 @@ import Data.Time
 import Data.UUID.V4
 import Data.UUID (toString, UUID)
 
-
 data LatLng = LatLng {
     getLat :: Double, getLng :: Double, getZoom :: Int 
   } deriving (Show, Read, Eq)
@@ -71,27 +70,30 @@ createSession :: IConnection a => a -> Text -> IO (Int, String)
 createSession conn name = do
     hash <- (nextRandom :: IO UUID)
     _ <- quickQuery' conn 
-      "insert into sessions (session_nickname, session_security_hash) values (?,?)"
+      "insert into sessions (session_nickname, session_opaque_uuid) values (?,?)"
       [toSql name, toSql . toString $ hash]
     [[s]] <- quickQuery' conn "select last_insert_rowid()" []
-
-    [[uuid]] <- quickQuery' conn "select session_security_hash from sessions where session = ?" [s]
+    [[uuid]] <- quickQuery' conn "select session_opaque_uuid from sessions where session = ?" [s]
     commit conn
     return (fromSql s :: Int, fromSql uuid :: String)
-  
 
 processEvent :: IConnection a => a -> Event -> IO ()
 
-processEvent conn (Rename s n) = undefined
+processEvent conn (Rename s n) = 
+  run conn "update sessions set session_nickname = ? where session = ?" [toSql n, toSql s] >>
+  commit conn >> return ()
 processEvent conn (Move s (LatLng lat lng zoom)) = do
-  quickQuery' conn 
+  run conn 
     "update sessions set session_lat = ?, session_lng = ?, session_zoom = ? \
     \where session = ?" 
     [toSql lat, toSql lng, toSql zoom, toSql s]
   commit conn
   return ()
 processEvent conn (Chat s t) = undefined
-processEvent conn (Disconnect s) = undefined
+processEvent conn (Disconnect s) = do
+  run conn "update sessions set session_disconnected_at = now() where session = ?" [toSql s]
+  commit conn
+  return ()
 
 
 -- used to generate unique names; increments number at end of name

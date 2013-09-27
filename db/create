@@ -1,0 +1,4 @@
+#!/bin/bash
+rm db/test.db
+sqlite3 db/test.db < db/sqlite3.sql
+sqlite3 db/test.db ".schema"

@@ -25,6 +25,8 @@ import System.IO (isEOF, stdin)
 
 import qualified Data.Map as M
 import Data.Aeson (encode, ToJSON)
+import Database.HDBC
+import Database.HDBC.Sqlite3
 
 import Core
 

@@ -30,24 +30,7 @@ Executable geogossip
     mtl, 
     snap-core,
     snap-server,
-    uuid
-
-Executable testCompile
-  Hs-Source-Dirs: src
-  main-is: Main2.hs
-  Build-Depends: 
-    base,
-    ghc-prim,
-    text,
-    websockets >= 0.6.0.3,
-    aeson,
-    bytestring,
-    transformers >= 0.3.0.0,
-    containers >= 0.4.2.1,
-    time >= 1.4,
-    mtl,
-    aeson,
-    attoparsec,
     HDBC,
-    HDBC-sqlite3
+    HDBC-sqlite3,
+    uuid
 
