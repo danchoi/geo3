@@ -12,7 +12,9 @@ import Data.Aeson
 import Data.Time.LocalTime
 import Database.HDBC
 import Data.Time
-import Control.Concurrent 
+import Data.UUID.V4
+import Data.UUID (toString, UUID)
+
 
 data LatLng = LatLng {
     getLat :: Double, getLng :: Double, getZoom :: Int 
@@ -64,14 +66,18 @@ testParse s = parseOnly clientMessage (T.pack s)
 
 -- Storage
 
-createSession :: IConnection a => a -> Text -> IO Int
+-- returns session int and session uuid 
+createSession :: IConnection a => a -> Text -> IO (Int, String)
 createSession conn name = do
-    let hash = "abc" :: Text
-    quickQuery' conn 
+    hash <- (nextRandom :: IO UUID)
+    _ <- quickQuery' conn 
       "insert into sessions (session_nickname, session_security_hash) values (?,?)"
-      [toSql name, toSql hash]
+      [toSql name, toSql . toString $ hash]
     [[s]] <- quickQuery' conn "select last_insert_rowid()" []
-    return (fromSql s :: Int)
+
+    [[uuid]] <- quickQuery' conn "select session_security_hash from sessions where session = ?" [s]
+    commit conn
+    return (fromSql s :: Int, fromSql uuid :: String)
   
 
 processEvent :: IConnection a => a -> Event -> IO ()

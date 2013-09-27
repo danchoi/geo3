@@ -29,7 +29,8 @@ Executable geogossip
     time >= 1.4,
     mtl, 
     snap-core,
-    snap-server
+    snap-server,
+    uuid
 
 Executable testCompile
   Hs-Source-Dirs: src
