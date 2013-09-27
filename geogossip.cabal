@@ -30,6 +30,7 @@ Executable geogossip
     mtl, 
     snap-core,
     snap-server,
+    process,
     HDBC,
     HDBC-sqlite3,
     uuid,

@@ -5,7 +5,6 @@ module Main where
 import Control.Monad (when, forM_, forever)
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative
-import Control.Concurrent
 import Control.Exception 
 import System.IO (stderr, hPutStrLn)
 import Data.Time.LocalTime
@@ -22,7 +21,7 @@ import Snap.Http.Server
 import Snap.Util.FileServe
 import Data.Maybe (fromJust)
 import System.IO (isEOF, stdin)
-
+import System.Cmd
 import qualified Data.Map as M
 import Data.Aeson (encode, ToJSON)
 import Database.HDBC
@@ -44,7 +43,6 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
 
 startWeb :: IO ()
 startWeb = do
-  serverState <- newMVar []
   putStrLn "starting server"
   httpServe simpleConfig $ site 
 
@@ -52,13 +50,20 @@ site :: Snap ()
 site = ifTop (serveFile "public/index.html") <|> 
     route [ ("", (serveDirectory "public")) ] 
 
+-- runs processEvent and outputs CSV
+processEvent' :: IConnection a => a -> Event -> IO Result
+processEvent' c e = do
+    res <- processEvent c e
+    exitCode <- system "sqlite3 -header -csv db/test.db 'select * from sessions' > dump1.csv"
+    return res
+
 test  = do 
     c <- connectSqlite3 "db/test.db"
-    (s, uuid) <- createSession c "Hello"
+    (NewSessionInfo s uuid) <- processEvent' c (NewSession "john")
     putStrLn $ show (s,uuid)
-    processEvent c (Move s (LatLng 42 71 13))
-    processEvent c (Chat s "Test chatting!")
-    processEvent c (Disconnect s)
+    processEvent' c (Move s (LatLng 42 71 13))
+    processEvent' c (Chat s "Test chatting!")
+    processEvent' c (Disconnect s)
     disconnect c
 
 main = startWeb

@@ -1,14 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core where
 import Control.Applicative
-import Data.Attoparsec.Text
+import Data.Attoparsec.Text hiding (Result)
 import Data.Text (Text, pack, append)
 import Data.Char
 import Data.List (partition)
 import Data.Either
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Aeson
 import Data.Time.LocalTime
 import Database.HDBC
 import Data.Time
@@ -22,12 +21,13 @@ data LatLng = LatLng {
 
 type Session = Int 
 type Name = Text -- alphaNumeric strings only 
-data Event = Rename Session Name
+data Event = NewSession Text  -- text is nickname
+           | Rename Session Name
            | Move Session LatLng
            | Chat Session Text
            | Disconnect Session
            deriving (Show, Eq, Read)
-
+data Result = Success | NewSessionInfo Int String
 type Sha1 = Text
 data ClientError = ClientError Text
 
@@ -38,9 +38,10 @@ data Post = Post Session Text ZonedTime
 runParser = parseOnly clientMessage 
 
 clientMessage :: Parser Event
-clientMessage = rename <|> move <|> chat
+clientMessage = newSession <|> rename <|> move <|> chat
 name = takeWhile1 isAlphaNum
 latLng = LatLng <$> double <*> (char ' ' *> double) <*> (char ' ' *> decimal)
+newSession = NewSession <$> takeText
 rename = Rename <$> decimal <* string " rename to " <*> name
 move = Move <$> (decimal <* string " move to ") <*> latLng
 chat = Chat <$> (decimal <* string " chat ") <*> takeText
@@ -66,9 +67,9 @@ testParse s = parseOnly clientMessage (T.pack s)
 
 -- Storage
 
--- returns session int and session uuid 
-createSession :: IConnection a => a -> Text -> IO (Int, String)
-createSession conn name = do
+processEvent :: IConnection a => a -> Event -> IO Result
+
+processEvent conn (NewSession name) = do
     hash <- (nextRandom :: IO UUID)
     _ <- quickQuery' conn 
       "insert into sessions (session_nickname, session_opaque_uuid) values (?,?)"
@@ -76,22 +77,21 @@ createSession conn name = do
     [[s]] <- quickQuery' conn "select last_insert_rowid()" []
     [[uuid]] <- quickQuery' conn "select session_opaque_uuid from sessions where session = ?" [s]
     commit conn
-    return (fromSql s :: Int, fromSql uuid :: String)
+    return $ NewSessionInfo (fromSql s :: Int) (fromSql uuid :: String)
 
-processEvent :: IConnection a => a -> Event -> IO ()
 
 processEvent conn (Rename s n) = do
   -- TODO update last_updated_at
   run conn "update sessions set session_nickname = ? where session = ?" [toSql n, toSql s] 
   commit conn 
-  return ()
+  return Success
 processEvent conn (Move s (LatLng lat lng zoom)) = do
   run conn 
     "update sessions set session_lat = ?, session_lng = ?, session_zoom = ? \
     \where session = ?" 
     [toSql lat, toSql lng, toSql zoom, toSql s]
   commit conn
-  return ()
+  return Success
 
 processEvent conn (Chat s t) = do
   [[nick,lat,lng,zoom]] <- quickQuery' conn
@@ -101,7 +101,7 @@ processEvent conn (Chat s t) = do
     "insert into posts(session, post_author, post_text, post_lat, post_lng, post_zoom) \
     \values (?,?,?,?,?,?)" [toSql s, nick, toSql t, lat, lng, zoom]
   commit conn
-  return ()
+  return Success
 
 processEvent conn (Disconnect s) = do
   t <- getClockTime
@@ -109,7 +109,7 @@ processEvent conn (Disconnect s) = do
   \where session = ?" 
     [toSql t, toSql s]
   commit conn
-  return ()
+  return Success
 
 -- used to generate unique names; increments number at end of name
 incName :: Text -> Text
