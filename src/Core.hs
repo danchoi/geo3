@@ -49,9 +49,9 @@ chat = Chat <$> (decimal <* string " chat ") <*> takeText
 {- 
 
   "connect dan"  => NewSession "dan"
-  "12 chat 42.123 -71.1233 12 hello cambridge!" => Chat 12 (42.123,-71.1233,12) "hello cambridge!"
+  "12 chat hello cambridge!" => Chat 12 "hello cambridge!"
   "12 rename to tom" => Rename 12 "tom"
-  "12 move to 42.1231232 -71.1231231 12" => Move 12 (42.1231232,-71.1231231,12)
+  "12 move to 42.1231232 -71.1231231 12" => Move 12 (LatLng 42.1231232 -71.1231231 12)
 
 -}
 
