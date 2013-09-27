@@ -68,7 +68,7 @@ createSession :: IConnection a => a -> Text -> IO Int
 createSession conn name = do
     let hash = "abc" :: Text
     quickQuery' conn 
-      "insert into sessions (name, session_security_hash) values (?,?)"
+      "insert into sessions (session_nickname, session_security_hash) values (?,?)"
       [toSql name, toSql hash]
     [[s]] <- quickQuery' conn "select last_insert_rowid()" []
     return (fromSql s :: Int)
