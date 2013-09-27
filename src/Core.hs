@@ -64,8 +64,15 @@ testParse s = parseOnly clientMessage (T.pack s)
 
 -- Storage
 
-createSession :: IConnection a => a -> IO Session
-createSession = undefined
+createSession :: IConnection a => a -> Text -> IO Int
+createSession conn name = do
+    let hash = "abc" :: Text
+    quickQuery' conn 
+      "insert into sessions (name, session_security_hash) values (?,?)"
+      [toSql name, toSql hash]
+    [[s]] <- quickQuery' conn "select last_insert_rowid()" []
+    return (fromSql s :: Int)
+  
 
 processEvent :: IConnection a => a -> Event -> IO ()
 
