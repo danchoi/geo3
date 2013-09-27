@@ -59,18 +59,16 @@ procEvent conn = do
   x <- readRequestBody (100000 :: Int64)
   let m = runAuthorizedParser . lazyByteStringToText $ x
   case m of 
-    Left err -> writeLBS . encode $ ("error","Failed to parse")
+    Left err -> writeLBS . encode $ (("error","Failed to parse") :: (Text, Text))
     Right (uuid, event) -> do
       case event of 
-        (NewSession _) -> do
-          res <-liftIO $ processEvent' conn event
-          writeLBS . encode $ res
-        otherwise -> do
-          -- Authorize the request:
-          -- Just check if the uuid exists TODO
-          res <- liftIO $ processEvent' conn event
-          writeLBS . encode $ res
-
+        (NewSession _) -> proc event
+        (Rename s _) -> authenticate uuid s >> proc event
+        (Move s _) -> authenticate uuid s >> proc event
+        (Chat s _) -> authenticate uuid s >> proc event
+        (Disconnect s) -> authenticate uuid s >> proc event
+  where proc event = (liftIO $ processEvent' conn event) >>= writeLBS . encode 
+        authenticate uuid s = return ()
 
 -- runs processEvent and outputs CSV
 processEvent' :: IConnection a => a -> Event -> IO Result
