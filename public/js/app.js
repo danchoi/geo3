@@ -1,5 +1,11 @@
 
 
+function sendEvent(s) {
+  $.post("/events", s, function(data) {
+    console.log(data); 
+  }); 
+}
+
 function connect(name) {
   var data = "- connect "+name;
   $.post("/events", data, function(data) {
@@ -8,6 +14,7 @@ function connect(name) {
   }); 
 
 }
+
 $(document).ready(function() {
 });
 

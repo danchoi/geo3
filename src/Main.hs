@@ -51,12 +51,13 @@ startWeb = do
 site :: IConnection a => a -> Snap ()
 site conn = ifTop (serveFile "public/index.html") <|> 
     route [ 
-      ("/events", method POST $ procEvent conn)
+      ("/events", method POST $ procEvent conn <|> writeText "Not authorized")
     , ("", serveDirectory "public")
     ] 
 
 procEvent conn = do
   x <- readRequestBody (100000 :: Int64)
+  liftIO $ T.putStrLn . lazyByteStringToText $ x
   let m = runAuthorizedParser . lazyByteStringToText $ x
   case m of 
     Left err -> writeLBS . encode $ (("error","Failed to parse") :: (Text, Text))
@@ -68,14 +69,23 @@ procEvent conn = do
         (Chat s _) -> authenticate uuid s >> proc event
         (Disconnect s) -> authenticate uuid s >> proc event
   where proc event = (liftIO $ processEvent' conn event) >>= writeLBS . encode 
-        authenticate uuid s = return ()
+        authenticate uuid s = do 
+          r <- liftIO $ quickQuery' conn 
+            "select session from sessions where session_opaque_uuid = ?" [toSql uuid]
+          liftIO $ putStrLn $ "comparing uuid " ++ (T.unpack uuid) ++ " to s " ++ (show s)
+          case r of 
+            [[s']] -> if (fromSql s' == s)
+                      then return ()
+                      else pass
+            _ -> pass
+
 
 -- runs processEvent and outputs CSV
 processEvent' :: IConnection a => a -> Event -> IO Result
 processEvent' c e = do
     res <- processEvent c e
-    exitCode <- system 
-      "sqlite3 -header -csv db/test.db 'select * from sessions' > dump1.csv"
+    _ <- system "sqlite3 -header -csv db/test.db 'select * from sessions' > sessions.csv"
+    _ <- system "sqlite3 -header -csv db/test.db 'select * from posts' > posts.csv"
     return res
 
 test  = do 
