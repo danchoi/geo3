@@ -14,48 +14,71 @@ import Database.HDBC
 import Data.Time
 import Control.Concurrent 
 
-data LatLng = LatLng Double Double Int -- lat, lng, zoom 
-    deriving (Show, Read, Eq)
+data LatLng = LatLng {
+    getLat :: Double, getLng :: Double, getZoom :: Int 
+  } deriving (Show, Read, Eq)
 
+type Session = Int 
 type Name = Text -- alphaNumeric strings only 
-type EventWithTime = (ZonedTime, Event) 
-data Event = Rename Name Name
-           | Locate Name LatLng
-           | Chat Name LatLng Text
-           | Disconnect Name
+data Event = Rename Session Name
+           | Move Session LatLng
+           | Chat Session Text
+           | Disconnect Session
            deriving (Show, Eq, Read)
 
 type Sha1 = Text
 data ClientError = ClientError Text
 
-data User = User Name LatLng
-data Post = Post User Text ZonedTime
-data CurrentState = CurrentState [User] [Post] ZonedTime
-data StateDiff = StateDiff [Event] ZonedTime
+data Post = Post Session Text ZonedTime
 
-class ChatStore a where
-  getCurrentState :: a -> IO CurrentState
-  getStateDiff :: a -> UTCTime -> IO StateDiff
-  insertEvent :: a -> Event -> IO ()
-  createUser :: a -> Text -> MVar b -> IO Name -- may return incremented name
-  renameUser :: a -> Text -> MVar b -> IO Name -- may return incremented name
-  authorizeUser :: a -> Sha1 -> Name -> IO Bool
+{- Client interaction parser -}
 
-{- Logic -}
+runParser = parseOnly clientMessage 
 
--- Starting simple, we just transform the data type into JSON to broadcast
+clientMessage :: Parser Event
+clientMessage = rename <|> locate <|> chat
+name = takeWhile1 isAlphaNum
+latLng = LatLng <$> double <*> (char ' ' *> double) <*> (char ' ' *> decimal)
+rename = Rename <$> decimal  <* string " rename to " <*> name
+locate = Move <$> (decimal  <* string " loc ") <*> latLng
+chat = Chat <$> (decimal  <* string " chat ") <*> (char ' ' *> takeText)
 
-instance ToJSON LatLng  where
-  toJSON (LatLng lat lng zoom) = toJSON (lat, lng, zoom)
+{- 
 
-instance ToJSON Event where
-  toJSON (Rename n n') = object ["from" .= n, "name" .= n']
-  toJSON (Locate n l) = object ["name" .= n, "loc" .= l]
-  toJSON (Chat n l t) = object ["name" .= n, "loc" .= l, "text" .= t]
-  toJSON (Disconnect n) = object ["disconnect" .= n]
+  Examples
 
-instance ToJSON ClientError where
-  toJSON (ClientError t) = object ["error" .= t]
+  ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
+  Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
+  ghci> test "dan rename to tom"
+  Right (Rename "dan" "tom")
+  ghci> test "dan loc 42.1231232 -71.1231231 12"
+  Right (Move "dan" (42.1231232,-71.1231231,12))
+
+-}
+
+
+{- parser test function for development -}
+testParse :: String -> Either String Event
+testParse s = parseOnly clientMessage (T.pack s)
+
+
+-- Storage
+
+createSession :: IConnection a => a -> IO Session
+createSession = undefined
+
+processEvent :: IConnection a => a -> Event -> IO ()
+
+processEvent conn (Rename s n) = undefined
+processEvent conn (Move s (LatLng lat lng zoom)) = do
+  quickQuery' conn 
+    "update sessions set session_lat = ?, session_lng = ?, session_zoom = ? \
+    \where session = ?" 
+    [toSql lat, toSql lng, toSql zoom, toSql s]
+  commit conn
+  return ()
+processEvent conn (Chat s t) = undefined
+processEvent conn (Disconnect s) = undefined
 
 
 -- used to generate unique names; increments number at end of name
@@ -70,105 +93,6 @@ incName x =
         str = (reverse remainder) ++ ds'
      in T.pack str
 
-{- Dev -}
--- testJSON s = case (testParse s) of
---   Left x -> putStrLn x
---   Right x -> B.putStrLn $ encode x
--- 
-{- Examples:
-
-ghci> testJSON "dan rename to tom"
-{"name":"tom","from":"dan"}
-
-ghci> testJSON "dan chat 42.123 -71.1233 12 hello cambridge!"
-{"name":"dan","text":"hello cambridge!","loc":[42.123,-71.1233,12]}
-
-ghci> testJSON "dan loc 42.1231232 -71.1231231 12"
-{"name":"dan","loc":[42.1231232,-71.1231231,12]}
-
--}
 
 
 
-{- Client interaction parser -}
-
-runParser = parseOnly clientMessage 
-
-clientMessage :: Parser Event
-clientMessage = rename <|> locate <|> chat
-name = takeWhile1 isAlphaNum
-latLng = LatLng <$> double <*> (char ' ' *> double) <*> (char ' ' *> decimal)
-rename = Rename <$> name <* string " rename to " <*> name
-locate = Locate <$> (name <* string " loc ") <*> latLng
-chat = Chat <$> (name <* string " chat ") <*> latLng <*> (char ' ' *> takeText)
-
-{- 
-
-  Examples
-
-  ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
-  Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
-  ghci> test "dan rename to tom"
-  Right (Rename "dan" "tom")
-  ghci> test "dan loc 42.1231232 -71.1231231 12"
-  Right (Locate "dan" (42.1231232,-71.1231231,12))
-
--}
-
-
-
-{- parser test function for development -}
-testParse :: String -> Either String Event
-testParse s = parseOnly clientMessage (T.pack s)
-
-
-{- Plain text representation of data types -}
-
-class SimpleRep a where
-  simpleTextRep :: a -> Text
-  simpleStringRep :: a -> String
-  simpleStringRep = T.unpack . simpleTextRep
-  
-instance SimpleRep LatLng where
-  simpleTextRep (LatLng lat lng zoom) = 
-    (pack.show $ lat) `append` " " `append`
-    (pack.show $ lng) `append` " " `append`
-    (pack.show $ zoom)
-
-instance SimpleRep Event where
-  simpleTextRep (Rename n n') = n `append` " rename to " `append` n'
-  simpleTextRep (Locate n l) = n `append` " loc " `append` (simpleTextRep l)
-  simpleTextRep (Chat n l t) = n `append` " chat " `append` (simpleTextRep l) 
-    `append` " " `append` t
-
-
-test2 = simpleTextRep (Chat "dan" (LatLng 1 2 3) "hello")
-
-
-
-{- References
-
-  Data.Time.LocalTime 
-    http://www.haskell.org/ghc/docs/6.12.2/html/libraries/time-1.1.4/Data-Time-LocalTime.html#t%3ALocalTime
-
-  Data.Time.Clock
-    http://www.haskell.org/ghc/docs/6.12.2/html/libraries/time-1.1.4/Data-Time-Clock.html#t%3AUTCTime
-
-  "2013-09-22T16:53:22.697-0400" JSON generated by ToJSON of ZonedTime
-
-  "2013-09-22 17:04:58 EDT" : this is readable by ZonedTime; more human readable, even if we stripped the partial seconds
-
-
-read "(Locate \"dan\" (42.1231232,-71.1231231,12))"
-read "(\"2013-09-22 17:04:58 EDT\", (Locate \"dan\" (42.1231232,-71.1231231,12)))" :: (ZonedTime, Event)
-((read "2013-09-22 17:04:58 EDT" :: ZonedTime), (Locate (T.pack "dan") (42.1231232,-71.1231231,12)))
-
-["2013-09-22T17:04:58-0400",{"name":"dan","loc":[42.1231232,-71.1231231,12],"t":"loc"}]
-
-on js side:
-new Date(Date.parse("2013-09-22T17:29:17.956-0400"))
-new Date(Date.parse("2013-09-22T17:29:17-0400"))
-
-onmessage:["2013-09-22T17:32:26.726-0400",{"name":"anon","text":"test","loc":[123.0,123.0,123]}]
-
--}
