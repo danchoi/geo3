@@ -36,23 +36,23 @@ data Post = Post Session Text ZonedTime
 runParser = parseOnly clientMessage 
 
 clientMessage :: Parser Event
-clientMessage = rename <|> locate <|> chat
+clientMessage = rename <|> move <|> chat
 name = takeWhile1 isAlphaNum
 latLng = LatLng <$> double <*> (char ' ' *> double) <*> (char ' ' *> decimal)
-rename = Rename <$> decimal  <* string " rename to " <*> name
-locate = Move <$> (decimal  <* string " loc ") <*> latLng
-chat = Chat <$> (decimal  <* string " chat ") <*> (char ' ' *> takeText)
+rename = Rename <$> decimal <* string " rename to " <*> name
+move = Move <$> (decimal <* string " move to ") <*> latLng
+chat = Chat <$> (decimal <* string " chat ") <*> takeText
 
 {- 
 
   Examples
 
-  ghci> test "dan chat 42.123 -71.1233 12 hello cambridge!"
-  Right (Chat "dan" (42.123,-71.1233,12) "hello cambridge!")
-  ghci> test "dan rename to tom"
-  Right (Rename "dan" "tom")
-  ghci> test "dan loc 42.1231232 -71.1231231 12"
-  Right (Move "dan" (42.1231232,-71.1231231,12))
+  ghci> testParse "12 chat 42.123 -71.1233 12 hello cambridge!"
+  Right (Chat 12 (42.123,-71.1233,12) "hello cambridge!")
+  ghci> testParse "12 rename to tom"
+  Right (Rename 12 "tom")
+  ghci> testParse "12 move to 42.1231232 -71.1231231 12"
+  Right (Move 12 (42.1231232,-71.1231231,12))
 
 -}
 
