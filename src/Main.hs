@@ -9,6 +9,7 @@ import Control.Exception
 import System.IO (stderr, hPutStrLn)
 import Data.Time.LocalTime
 import Data.Text (Text)
+import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as TE
@@ -43,12 +44,23 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
 
 startWeb :: IO ()
 startWeb = do
+  c <- connectSqlite3 "db/test.db"
   putStrLn "starting server"
-  httpServe simpleConfig $ site 
+  httpServe simpleConfig $ site c
 
-site :: Snap ()
-site = ifTop (serveFile "public/index.html") <|> 
-    route [ ("", (serveDirectory "public")) ] 
+site :: IConnection a => a -> Snap ()
+site conn = ifTop (serveFile "public/index.html") <|> 
+    route [ 
+      ("/events", method POST $ procEvent conn)
+    , ("", serveDirectory "public")
+    ] 
+
+procEvent conn = do
+    x <- readRequestBody (100000 :: Int64)
+    let event = runParser . lazyByteStringToText $ x
+    liftIO $ (putStrLn . show) event
+    writeLBS x
+
 
 -- runs processEvent and outputs CSV
 processEvent' :: IConnection a => a -> Event -> IO Result
@@ -73,8 +85,7 @@ main = startWeb
 
 {- helper to encode to JSON as Text -}
 
-encodeToText :: ToJSON a => a -> Text
-encodeToText = TE.decodeUtf8.B.concat.BL.toChunks.encode 
+lazyByteStringToText = TE.decodeUtf8.B.concat.BL.toChunks
 
 
 {-

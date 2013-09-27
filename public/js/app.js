@@ -1,35 +1,8 @@
-var websocket, name;
-function startWebSocket() {
-  var webSocketURL = 'ws://localhost:9160/ws'; 
-  websocket = new WebSocket(webSocketURL); 
-  websocket.onopen = function(event){
-    console.log("Connected to server " );
-    // if (name) websocket.send("rename to " + name);
-
-    websocket.onmessage = function(event){
-      console.log("onmessage:" + event.data);
-      if (/^\w+$/.test(event.data)) {
-        name = event.data;
-      } 
-    };
-    websocket.onclose = function(event){
-      console.log("connection closed. reconnecting.");
-      // try to reopen
-      setTimeout(startWebSocket, 1000);
-    };
-
-  };
-};
-
-/* Important to prevent accmulation of ghost websockets */
-$(window).unload(function() {
-  if (websocket) websocket.close();
-  return;
-});
-
-
 $(document).ready(function() {
-  startWebSocket();
+  var data = "connect sara";
+  $.post("/events", data, function(data) {
+    console.log(data); 
+  }); 
 });
 
 var map = L.map('map', { dragging: true,
@@ -59,7 +32,7 @@ map.on('moveend', function(e) {
       lng = c.lng,
       z = map.getZoom(),
       loc = [lat,lng,z].join(' ');
-  websocket.send("loc " + loc);
+  // TODO
 });
 
 
