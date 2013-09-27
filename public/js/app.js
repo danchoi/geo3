@@ -1,13 +1,20 @@
+var sessionPrefix;
+var map = L.map('map', { dragging: true,
+                         zoomControl: true,
+                         zoomAnimation: false,
+                         scrollWheelZoom: false,
+                         doubleClickZoom: false,
+                         touchZoom: false
+                       }).setView([42.375, -71.106], 14);
+
 
 function ChatController($scope, $http, $log) {
-
   $scope.session = {};
   $scope.submitNick = function() {
-    if (!$scope.session.uuid) {
+    if (!$scope.session.uuid) 
       $scope.connect($scope, $scope.nickname);
-    } else {
-
-    }
+    else 
+      $http.post('/events', sessionPrefix + 'rename to '+$scope.nickname);
   }
 
   $scope.connect = function() {
@@ -17,8 +24,26 @@ function ChatController($scope, $http, $log) {
       // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
       $log.log(data); 
       $scope.session = data;
+      sessionPrefix = $scope.session.uuid + ' ' + $scope.session.session + ' ';
     }); 
   }
+
+  $scope.chat = function() {
+
+  }
+
+  map.on('moveend', function(e) {
+    if (!sessionPrefix) return;
+    var c = map.getCenter(),
+        lat = c.lat,
+        lng = c.lng,
+        zoom = map.getZoom(),
+        loc = [lat,lng,zoom].join(' '),
+        msg = sessionPrefix+'move to '+loc;
+    $log.log(msg);
+    $http.post('/events', msg);
+  });
+
 
 }
 
@@ -33,14 +58,6 @@ $(document).ready(function() {
 
 
 
-var map = L.map('map', { dragging: true,
-                         zoomControl: true,
-                         zoomAnimation: false,
-                         scrollWheelZoom: false,
-                         doubleClickZoom: false,
-                         touchZoom: false
-                       }).setView([42.375, -71.106], 14);
-
 
 L.tileLayer('http://{s}.tile.cloudmade.com/' + API_KEY + '/997/256/{z}/{x}/{y}.png', {
     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
@@ -54,15 +71,6 @@ function printBounds(b) {
       nw = b.getNorthWest();
   console.log([sw,se,ne,nw].toString());
 }
-map.on('moveend', function(e) {
-  var c = map.getCenter(),
-      lat = c.lat,
-      lng = c.lng,
-      z = map.getZoom(),
-      loc = [lat,lng,z].join(' ');
-  // TODO
-});
-
 
 var svg = d3.select(map.getPanes().overlayPane).
             append("svg").
