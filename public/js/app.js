@@ -1,22 +1,37 @@
 
+function ChatController($scope, $http, $log) {
+
+  $scope.session = {};
+  $scope.submitNick = function() {
+    if (!$scope.session.uuid) {
+      $scope.connect($scope, $scope.nickname);
+    } else {
+
+    }
+  }
+
+  $scope.connect = function() {
+    var data = "- connect "+$scope.nickname;
+    console.log("connecting..");
+    $http.post("/events", data).success(function(data) {
+      // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
+      $log.log(data); 
+      $scope.session = data;
+    }); 
+  }
+
+}
 
 function sendEvent(s) {
   $.post("/events", s, function(data) {
     console.log(data); 
   }); 
 }
-
-function connect(name) {
-  var data = "- connect "+name;
-  $.post("/events", data, function(data) {
-    console.log(data); 
-    // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
-  }); 
-
-}
-
 $(document).ready(function() {
+
 });
+
+
 
 var map = L.map('map', { dragging: true,
                          zoomControl: true,
