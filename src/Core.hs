@@ -81,6 +81,7 @@ processEvent conn (Rename s n) = do
   run conn "update sessions set session_nickname = ? where session = ?" [toSql n, toSql s] 
   commit conn 
   return Success
+
 processEvent conn (Move s (LatLng lat lng zoom)) = do
   run conn 
     "update sessions set session_lat = ?, session_lng = ?, session_zoom = ? \
