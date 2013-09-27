@@ -54,7 +54,8 @@ site = ifTop (serveFile "public/index.html") <|>
 processEvent' :: IConnection a => a -> Event -> IO Result
 processEvent' c e = do
     res <- processEvent c e
-    exitCode <- system "sqlite3 -header -csv db/test.db 'select * from sessions' > dump1.csv"
+    exitCode <- system 
+      "sqlite3 -header -csv db/test.db 'select * from sessions' > dump1.csv"
     return res
 
 test  = do 
