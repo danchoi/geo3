@@ -27,7 +27,6 @@ import qualified Data.Map as M
 import Data.Aeson (encode, ToJSON)
 import Database.HDBC
 import Database.HDBC.Sqlite3
-
 import Core
 
 simpleConfig :: Config m a
@@ -43,8 +42,8 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     bsFromString = TE.encodeUtf8 . T.pack
 
 
-main :: IO ()
-main = do
+startWeb :: IO ()
+startWeb = do
   serverState <- newMVar []
   putStrLn "starting server"
   httpServe simpleConfig $ site 
@@ -52,6 +51,18 @@ main = do
 site :: Snap ()
 site = ifTop (serveFile "public/index.html") <|> 
     route [ ("", (serveDirectory "public")) ] 
+
+test  = do 
+    c <- connectSqlite3 "db/test.db"
+    (s, uuid) <- createSession c "Hello"
+    putStrLn $ show (s,uuid)
+    processEvent c (Move s (LatLng 42 71 13))
+    processEvent c (Chat s "Test chatting!")
+    processEvent c (Disconnect s)
+    disconnect c
+
+main = startWeb
+
 
 
 {- helper to encode to JSON as Text -}

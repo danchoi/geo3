@@ -14,6 +14,7 @@ import Database.HDBC
 import Data.Time
 import Data.UUID.V4
 import Data.UUID (toString, UUID)
+import System.Time
 
 data LatLng = LatLng {
     getLat :: Double, getLng :: Double, getZoom :: Int 
@@ -79,9 +80,11 @@ createSession conn name = do
 
 processEvent :: IConnection a => a -> Event -> IO ()
 
-processEvent conn (Rename s n) = 
-  run conn "update sessions set session_nickname = ? where session = ?" [toSql n, toSql s] >>
-  commit conn >> return ()
+processEvent conn (Rename s n) = do
+  -- TODO update last_updated_at
+  run conn "update sessions set session_nickname = ? where session = ?" [toSql n, toSql s] 
+  commit conn 
+  return ()
 processEvent conn (Move s (LatLng lat lng zoom)) = do
   run conn 
     "update sessions set session_lat = ?, session_lng = ?, session_zoom = ? \
@@ -89,12 +92,24 @@ processEvent conn (Move s (LatLng lat lng zoom)) = do
     [toSql lat, toSql lng, toSql zoom, toSql s]
   commit conn
   return ()
-processEvent conn (Chat s t) = undefined
-processEvent conn (Disconnect s) = do
-  run conn "update sessions set session_disconnected_at = now() where session = ?" [toSql s]
+
+processEvent conn (Chat s t) = do
+  [[nick,lat,lng,zoom]] <- quickQuery' conn
+    "select session_nickname, session_lat, session_lng, session_zoom from \
+    \sessions where session = ?" [toSql s]
+  run conn 
+    "insert into posts(session, post_author, post_text, post_lat, post_lng, post_zoom) \
+    \values (?,?,?,?,?,?)" [toSql s, nick, toSql t, lat, lng, zoom]
   commit conn
   return ()
 
+processEvent conn (Disconnect s) = do
+  t <- getClockTime
+  run conn "update sessions set session_disconnected_at = datetime(?, 'unixepoch') \
+  \where session = ?" 
+    [toSql t, toSql s]
+  commit conn
+  return ()
 
 -- used to generate unique names; increments number at end of name
 incName :: Text -> Text

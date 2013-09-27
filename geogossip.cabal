@@ -32,5 +32,6 @@ Executable geogossip
     snap-server,
     HDBC,
     HDBC-sqlite3,
-    uuid
+    uuid,
+    old-time
 
