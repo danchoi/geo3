@@ -11,6 +11,12 @@ var map = L.map('map', { dragging: true,
                        }).setView([42.375, -71.106], 14);
 
 
+L.tileLayer('http://{s}.tile.cloudmade.com/' + API_KEY + '/997/256/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+    maxZoom: 18
+}).addTo(map);
+
+
 function ChatController($scope, $http, $log) {
 
   // populate from cookie values, if they exist 
@@ -66,12 +72,6 @@ function clearCookies() {
   eraseCookie("nickname");
 }
 
-
-L.tileLayer('http://{s}.tile.cloudmade.com/' + API_KEY + '/997/256/{z}/{x}/{y}.png', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-    maxZoom: 18
-}).addTo(map);
-
 function printBounds(b) {
   var sw = b.getSouthWest(),
       se = b.getSouthEast(),
@@ -81,8 +81,28 @@ function printBounds(b) {
 }
 
 var svg = d3.select(map.getPanes().overlayPane).
-            append("svg").
-            attr('class', 'myMapOverlay'),
-    g = svg.append("g").attr("class", "leaflet-zoom");
+  append('svg').
+  attr("class", "leaflet-zoom-hide");
+
+d3.csv("/sessions.csv", function(error, data) {
+  svg.selectAll("circle").
+    data(data).
+    enter().
+    append("circle").
+    attr({
+      "fill": "red",
+      "r": 10,
+      "cx": function(d) { return project(d)[0] },
+      "cy": function(d) { return project(d)[1] }
+    });;
+
+})
 
 
+// map utility
+function project(x) {
+    var lat = parseFloat(x.session_lat),
+        lng = parseFloat(x.session_lng),
+        point = map.latLngToLayerPoint(new L.LatLng(lat, lng));
+    return [point.x, point.y];
+}
