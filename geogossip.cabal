@@ -12,7 +12,6 @@ License-file:        LICENSE
 Cabal-Version: >= 1.4
 
 Executable geogossip
-  Hs-Source-Dirs: src
   main-is: Main.hs
   Build-Depends: 
     base,
