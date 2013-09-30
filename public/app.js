@@ -62,7 +62,6 @@ function ChatController($scope, $http, $log) {
         msg = sessionPrefix+' move to '+loc;
     $log.log(msg);
     $http.post('/events', msg);
-    reset();
   });
 
 
@@ -84,12 +83,22 @@ function printBounds(b) {
 /* Initialize the SVG layer */
 map._initPathRoot()    
 var svg = d3.select('#map').select('svg');
-var data;
+var data, sessions;
 
 map.on("viewreset", reset);
 
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
+  sessions = svg.selectAll("circle").
+    data(data).
+    enter().
+    append("circle").
+    attr({
+      "fill": "red",
+      "r": 10,
+      "cx": function(d) { return project(d).x },
+      "cy": function(d) { return project(d).y }
+    });
   reset();
 })
 
@@ -97,17 +106,12 @@ d3.csv("/sessions.csv", function(error, serverData) {
 // Reposition the SVG to cover the features.
 function reset() {
   if (!data) return;
-  data.forEach(function(d) { d.latLng = project(d); });
-  svg.selectAll("circle").
-    data(data).
-    enter().
-    append("circle").
-    attr({
-      "fill": "red",
-      "r": 10,
-      "cx": function(d) { return d.latLng.x },
-      "cy": function(d) { return d.latLng.y }
-    });
+  console.log("viewreset");
+  sessions.attr({
+    "cx": function(d) { return project(d).x },
+    "cy": function(d) { return project(d).y },
+    "r": function(d) { return 10 }
+  });
 }
 
 
