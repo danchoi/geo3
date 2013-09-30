@@ -74,7 +74,7 @@ procEvent conn = do
         authenticate uuid s = do 
           r <- liftIO $ quickQuery' conn 
             "select session from sessions where session_opaque_uuid = ?" [toSql uuid]
-          liftIO $ putStrLn $ "comparing uuid " ++ (T.unpack uuid) ++ " to s " ++ (show s)
+          -- liftIO $ putStrLn $ "comparing uuid " ++ (T.unpack uuid) ++ " to s " ++ (show s)
           case r of 
             [[s']] -> if (fromSql s' == s)
                       then return ()
@@ -88,7 +88,7 @@ processEvent' c e = do
     res <- processEvent c e
     _ <- system 
         "sqlite3 -header -csv db/test.db 'select session, session_nickname, session_lat, session_lng from sessions where session_lat is not null and session_lng is not null' > public/sessions.csv"
-    _ <- system "sqlite3 -header -csv db/test.db 'select * from posts' > public/posts.csv"
+    _ <- system "sqlite3 -header -csv db/test.db 'select * from posts order by post_created_at desc' > public/posts.csv"
     return res
 
 test  = do 

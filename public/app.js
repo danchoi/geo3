@@ -27,7 +27,7 @@ function ChatController($scope, $http, $log) {
     if (!sessionPrefix) 
       $scope.connect($scope, $scope.nickname);
     else 
-      $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname).success(rebind);
+      $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname).success(reloadSessions);
     createCookie("nickname", $scope.nickname, COOKIE_DAYS);
   }
 
@@ -38,20 +38,31 @@ function ChatController($scope, $http, $log) {
       $log.log(data); 
       sessionPrefix = data.uuid + ' ' + data.session;
       createCookie("sessionprefix", sessionPrefix, COOKIE_DAYS);
-      rebind();
+      reloadSessions();
     }); 
   }
 
-  $scope.chat = function() {
-
+  $scope.submitChat = function() {
+    $http.post("/events", sessionPrefix + ' chat '+$scope.chatEntry).success(reloadPosts);
   }
+
+  reloadPosts = function() {
+    console.log("reload posts");
+    d3.csv("/posts.csv", function(error, data) {
+      $scope.$apply(function() {
+        console.log(data);
+        $scope.posts = data;
+      })
+    });
+  }
+  setInterval(reloadPosts, 1000);
 
   // TODO make interaction
   $scope.logout = function() {
     clearCookies();
     $scope.nickname = null;
     sessionPrefix = null;
-    rebind();
+    reloadSessions();
   }
 
   map.on('moveend', function(e) {
@@ -101,7 +112,7 @@ d3.csv("/sessions.csv", function(error, serverData) {
 })
 
 
-function rebind() {
+function reloadSessions() {
   d3.csv("/sessions.csv", function(error, serverData) {
     data = serverData;
 
@@ -113,7 +124,7 @@ function rebind() {
   })
 }
 
-setInterval(rebind, 2000);
+setInterval(reloadSessions, 2000);
 
 function makePoint(sel) {
   sel
