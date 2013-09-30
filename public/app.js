@@ -97,7 +97,9 @@ d3.csv("/sessions.csv", function(error, serverData) {
       "fill": "red",
       "r": 10,
       "cx": function(d) { return project(d).x },
-      "cy": function(d) { return project(d).y }
+      "cy": function(d) { return project(d).y },
+      "stroke": "black",
+      "stroke-width": 2
     });
   reset();
 })
