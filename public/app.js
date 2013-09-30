@@ -22,7 +22,6 @@ function ChatController($scope, $http, $log) {
       $scope.connect($scope, $scope.nickname);
     else 
       $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname);
-    // save nick in cookie
     createCookie("nickname", $scope.nickname, COOKIE_DAYS);
   }
 
@@ -30,7 +29,6 @@ function ChatController($scope, $http, $log) {
     var data = "- connect "+$scope.nickname;
     console.log("connecting..");
     $http.post("/events", data).success(function(data) {
-      // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
       $log.log(data); 
       sessionPrefix = data.uuid + ' ' + data.session;
       createCookie("sessionprefix", sessionPrefix, COOKIE_DAYS);
@@ -39,6 +37,13 @@ function ChatController($scope, $http, $log) {
 
   $scope.chat = function() {
 
+  }
+
+  // TODO make interaction
+  $scope.logout = function() {
+    clearCookies();
+    $scope.nickname = null;
+    sessionPrefix = null;
   }
 
   map.on('moveend', function(e) {
@@ -56,16 +61,10 @@ function ChatController($scope, $http, $log) {
 
 }
 
-function sendEvent(s) {
-  $.post("/events", s, function(data) {
-    console.log(data); 
-  }); 
+function clearCookies() {
+  eraseCookie("sessionprefix");
+  eraseCookie("nickname");
 }
-$(document).ready(function() {
-
-});
-
-
 
 
 L.tileLayer('http://{s}.tile.cloudmade.com/' + API_KEY + '/997/256/{z}/{x}/{y}.png', {
