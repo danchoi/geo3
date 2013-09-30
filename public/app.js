@@ -91,27 +91,12 @@ map.on("viewreset", reset);
 
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
-  sessions = svg.selectAll("rect")
+  sessions = svg
+    .selectAll("circle")
     .data(data)
     .enter()
     .append("g")
-    .call(reposition);
-  sessions
-    .append("rect")
-    .attr("fill", "red")
-    .attr("x", -25)
-    .attr("y", -10)
-    .attr("stroke", "black")
-    .attr("width", 50)
-    .attr("height", 10);
-  sessions
-    .append("text")
-    .attr("x", -20)
-    .attr("y", -2)
-    .attr("fill", "white")
-    .attr("text-anchor", "middle")
-    .text(function (d) { return d.session_nickname });
-
+    .call(makePoint);
   reset();
 })
 
@@ -119,22 +104,38 @@ d3.csv("/sessions.csv", function(error, serverData) {
 function rebind() {
   d3.csv("/sessions.csv", function(error, serverData) {
     data = serverData;
-    // bind to new values
+
+    // bind to new values with keys
     sessions.data(data, function(d) {return d.session});
+
     // need to enter()
     reset();
   })
 }
 
 setInterval(rebind, 2000);
-function reposition(sel) {
+
+function makePoint(sel) {
   sel
     .attr("transform", function(d) {
       var x = project(d).x;
       var y = project(d).y;
       return ("translate("+x+","+y+")")
     });
-  ;
+  sel
+    .append("circle")
+    .attr("fill", "red")
+    .attr("cx", 0)
+    .attr("cy", 0)
+    .attr("stroke", "black")
+    .attr("r", 5);
+  sel
+    .append("text")
+    .attr("x", -10)
+    .attr("y", -5)
+    .attr("fill", "black")
+    .attr("text-anchor", "middle")
+    .text(function (d) { return d.session_nickname });
 }
 
 // Reposition the SVG to cover the features.
@@ -142,13 +143,13 @@ function reset() {
   if (!data) return;
   console.log("viewreset");
   sessions
-    .select("text")
-      .text(function (d) { return d.session_nickname });
-
-  sessions
     .transition()
       .duration(100)
-      .call(reposition);
+    .attr("transform", function(d) {
+      var x = project(d).x;
+      var y = project(d).y;
+      return ("translate("+x+","+y+")")
+    });
 }
 
 
