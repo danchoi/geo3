@@ -27,7 +27,7 @@ function ChatController($scope, $http, $log) {
     if (!sessionPrefix) 
       $scope.connect($scope, $scope.nickname);
     else 
-      $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname);
+      $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname).success(rebind);
     createCookie("nickname", $scope.nickname, COOKIE_DAYS);
   }
 
@@ -63,7 +63,7 @@ function ChatController($scope, $http, $log) {
         loc = [lat,lng,zoom].join(' '),
         msg = sessionPrefix+' move to '+loc;
     $log.log(msg);
-    $http.post('/events', msg).success(rebind);
+    $http.post('/events', msg);
   });
 
 
@@ -91,12 +91,11 @@ map.on("viewreset", reset);
 
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
-  sessions = svg.selectAll("circle")
+  sessions = svg.selectAll("rect")
     .data(data)
     .enter()
     .append("g")
     .call(reposition);
-
   sessions
     .append("rect")
     .attr("fill", "red")
@@ -110,7 +109,7 @@ d3.csv("/sessions.csv", function(error, serverData) {
     .attr("x", -20)
     .attr("y", -2)
     .attr("fill", "white")
-    .attr("text-align", "middle")
+    .attr("text-anchor", "middle")
     .text(function (d) { return d.session_nickname });
 
   reset();
@@ -129,17 +128,23 @@ function rebind() {
 
 setInterval(rebind, 2000);
 function reposition(sel) {
-  sel.attr("transform", function(d) {
-    var x = project(d).x;
-    var y = project(d).y;
-    return ("translate("+x+","+y+")")
-  });
+  sel
+    .attr("transform", function(d) {
+      var x = project(d).x;
+      var y = project(d).y;
+      return ("translate("+x+","+y+")")
+    });
+  ;
 }
 
 // Reposition the SVG to cover the features.
 function reset() {
   if (!data) return;
   console.log("viewreset");
+  sessions
+    .select("text")
+      .text(function (d) { return d.session_nickname });
+
   sessions
     .transition()
       .duration(100)
