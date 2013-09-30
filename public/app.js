@@ -1,4 +1,7 @@
 var sessionPrefix;
+var COOKIE_DAYS = 3;
+
+
 var map = L.map('map', { dragging: true,
                          zoomControl: true,
                          zoomAnimation: false,
@@ -9,12 +12,18 @@ var map = L.map('map', { dragging: true,
 
 
 function ChatController($scope, $http, $log) {
-  $scope.session = {};
+
+  // populate from cookie values, if they exist 
+  sessionPrefix = readCookie("sessionprefix");
+  $scope.nickname = readCookie("nickname");
+
   $scope.submitNick = function() {
-    if (!$scope.session.uuid) 
+    if (!sessionPrefix) 
       $scope.connect($scope, $scope.nickname);
     else 
-      $http.post('/events', sessionPrefix + 'rename to '+$scope.nickname);
+      $http.post('/events', sessionPrefix + ' rename to '+$scope.nickname);
+    // save nick in cookie
+    createCookie("nickname", $scope.nickname, COOKIE_DAYS);
   }
 
   $scope.connect = function() {
@@ -23,8 +32,8 @@ function ChatController($scope, $http, $log) {
     $http.post("/events", data).success(function(data) {
       // {"uuid":"8bc67511-a95c-48c3-a9d1-e9f8dcaaf77e","session":4} 
       $log.log(data); 
-      $scope.session = data;
-      sessionPrefix = $scope.session.uuid + ' ' + $scope.session.session + ' ';
+      sessionPrefix = data.uuid + ' ' + data.session;
+      createCookie("sessionprefix", sessionPrefix, COOKIE_DAYS);
     }); 
   }
 
@@ -39,7 +48,7 @@ function ChatController($scope, $http, $log) {
         lng = c.lng,
         zoom = map.getZoom(),
         loc = [lat,lng,zoom].join(' '),
-        msg = sessionPrefix+'move to '+loc;
+        msg = sessionPrefix+' move to '+loc;
     $log.log(msg);
     $http.post('/events', msg);
   });
