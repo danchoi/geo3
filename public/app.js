@@ -80,20 +80,38 @@ function printBounds(b) {
   console.log([sw,se,ne,nw].toString());
 }
 
-var svg = d3.select(map.getPanes().overlayPane).
-  append('svg').
-  attr("class", "leaflet-zoom-hide");
+var svg = d3.select(map.getPanes().overlayPane).append('svg');
+var g = svg.append("g").attr("class", "leaflet-zoom-hide");
 
 d3.csv("/sessions.csv", function(error, data) {
-  svg.selectAll("circle").
+  
+  data.forEach(function(d) { d.latLng = project(d); });
+
+  var latmin = d3.min(data, function(d) { return d.latLng.x }),
+      latmax = d3.max(data, function(d) { return d.latLng.x }),
+      lngmin = d3.min(data, function(d) { return d.latLng.y }),
+      lngmax = d3.max(data, function(d) { return d.latLng.y }), 
+      bottomLeft = map.latLngToLayerPoint(new L.LatLng(latmin, lngmin)),
+      topRight = map.latLngToLayerPoint(new L.LatLng(latmax, lngmax));
+      console.log(bottomLeft);
+      console.log(topRight);
+
+  svg.attr("width", topRight.x - bottomLeft.x)
+     .attr("height", bottomLeft.y - topRight.y)
+     .style("margin-left", bottomLeft.x + "px")
+     .style("margin-top", topRight.y + "px");
+
+  g.attr("transform", "translate(" + -bottomLeft.x + "," + -topRight.y + ")");
+
+  g.selectAll("circle").
     data(data).
     enter().
     append("circle").
     attr({
       "fill": "red",
       "r": 10,
-      "cx": function(d) { return project(d)[0] },
-      "cy": function(d) { return project(d)[1] }
+      "cx": function(d) { return project(d).x },
+      "cy": function(d) { return project(d).y }
     });;
 
 })
@@ -104,5 +122,6 @@ function project(x) {
     var lat = parseFloat(x.session_lat),
         lng = parseFloat(x.session_lng),
         point = map.latLngToLayerPoint(new L.LatLng(lat, lng));
-    return [point.x, point.y];
+    return point;
 }
+
