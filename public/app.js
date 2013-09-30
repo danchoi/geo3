@@ -93,15 +93,25 @@ d3.csv("/sessions.csv", function(error, serverData) {
   sessions = svg.selectAll("circle")
     .data(data)
     .enter()
-    .append("circle")
-    .attr({
-      "fill": "red",
-      "r": 10,
-      "cx": function(d) { return project(d).x },
-      "cy": function(d) { return project(d).y },
-      "stroke": "black",
-      "stroke-width": 2
-    });
+    .append("g")
+    .call(reposition);
+
+  sessions
+    .append("rect")
+    .attr("fill", "red")
+    .attr("x", -25)
+    .attr("y", -10)
+    .attr("stroke", "black")
+    .attr("width", 50)
+    .attr("height", 10);
+  sessions
+    .append("text")
+    .attr("x", -20)
+    .attr("y", -2)
+    .attr("fill", "white")
+    .attr("text-align", "middle")
+    .text(function (d) { return d.session_nickname });
+
   reset();
 })
 
@@ -111,11 +121,16 @@ function rebind() {
     data = serverData;
     // bind to new values
     sessions.data(data, function(d) {return d.session});
-
-    // TODO
-    // http://bl.ocks.org/mbostock/3808234
     reset();
   })
+}
+
+function reposition(sel) {
+  sel.attr("transform", function(d) {
+    var x = project(d).x;
+    var y = project(d).y;
+    return ("translate("+x+","+y+")")
+  });
 }
 
 // Reposition the SVG to cover the features.
@@ -125,11 +140,7 @@ function reset() {
   sessions
     .transition()
       .duration(100)
-      .attr({
-        "cx": function(d) { return project(d).x },
-        "cy": function(d) { return project(d).y },
-        "r": function(d) { return 10 }
-      });
+      .call(reposition);
 }
 
 
