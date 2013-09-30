@@ -91,7 +91,7 @@ map.on("viewreset", reset);
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
   sessions = svg.selectAll("circle")
-    .data(data, function(d) {return d.session})
+    .data(data)
     .enter()
     .append("circle")
     .attr({
@@ -109,29 +109,27 @@ d3.csv("/sessions.csv", function(error, serverData) {
 function rebind() {
   d3.csv("/sessions.csv", function(error, serverData) {
     data = serverData;
-    sessions
-      .data(data, function(d) {return d.session})
-      .enter()
-      .append("circle")
-      .transition()
-      .duration(1400)
-      .attr("cx", function(d) { return project(d).x })
-      .attr("cy", function(d) { return project(d).y });
+    // bind to new values
+    sessions.data(data, function(d) {return d.session});
 
+    // TODO
+    // http://bl.ocks.org/mbostock/3808234
     reset();
   })
-  
 }
 
 // Reposition the SVG to cover the features.
 function reset() {
   if (!data) return;
   console.log("viewreset");
-  sessions.attr({
-    "cx": function(d) { return project(d).x },
-    "cy": function(d) { return project(d).y },
-    "r": function(d) { return 10 }
-  });
+  sessions
+    .transition()
+      .duration(100)
+      .attr({
+        "cx": function(d) { return project(d).x },
+        "cy": function(d) { return project(d).y },
+        "r": function(d) { return 10 }
+      });
 }
 
 
