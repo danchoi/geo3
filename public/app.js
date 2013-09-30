@@ -92,7 +92,7 @@ map.on("viewreset", reset);
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
   sessions = svg
-    .selectAll("circle")
+    .selectAll("g")
     .data(data)
     .enter()
     .append("g")
