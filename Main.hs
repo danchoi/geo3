@@ -27,14 +27,15 @@ import qualified Data.Map as M
 import Data.Aeson (encode, ToJSON)
 import Database.HDBC
 import Database.HDBC.Sqlite3
+import System.Directory (createDirectoryIfMissing)
 import Core
 
 simpleConfig :: Config m a
 simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
     base = [hostName, accessLog, errorLog, locale, port, ip, verbose]
     hostName = setHostname (bsFromString "localhost")
-    accessLog = setAccessLog (ConfigFileLog "access.log")
-    errorLog = setErrorLog (ConfigFileLog "error.log")
+    accessLog = setAccessLog (ConfigFileLog "log/access.log")
+    errorLog = setErrorLog (ConfigFileLog "log/error.log")
     locale = setLocale "US"
     port = setPort 9160
     ip = setBind (bsFromString "127.0.0.1")
@@ -44,6 +45,7 @@ simpleConfig = foldl' (\accum new -> new accum) emptyConfig base where
 
 startWeb :: IO ()
 startWeb = do
+  createDirectoryIfMissing False "log"
   c <- connectSqlite3 "db/test.db"
   putStrLn "starting server"
   httpServe simpleConfig $ site c
