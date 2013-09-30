@@ -61,7 +61,7 @@ function ChatController($scope, $http, $log) {
         loc = [lat,lng,zoom].join(' '),
         msg = sessionPrefix+' move to '+loc;
     $log.log(msg);
-    $http.post('/events', msg);
+    $http.post('/events', msg).success(rebind);
   });
 
 
@@ -90,11 +90,11 @@ map.on("viewreset", reset);
 
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
-  sessions = svg.selectAll("circle").
-    data(data).
-    enter().
-    append("circle").
-    attr({
+  sessions = svg.selectAll("circle")
+    .data(data, function(d) {return d.session})
+    .enter()
+    .append("circle")
+    .attr({
       "fill": "red",
       "r": 10,
       "cx": function(d) { return project(d).x },
@@ -105,6 +105,23 @@ d3.csv("/sessions.csv", function(error, serverData) {
   reset();
 })
 
+
+function rebind() {
+  d3.csv("/sessions.csv", function(error, serverData) {
+    data = serverData;
+    sessions
+      .data(data, function(d) {return d.session})
+      .enter()
+      .append("circle")
+      .transition()
+      .duration(1400)
+      .attr("cx", function(d) { return project(d).x })
+      .attr("cy", function(d) { return project(d).y });
+
+    reset();
+  })
+  
+}
 
 // Reposition the SVG to cover the features.
 function reset() {
