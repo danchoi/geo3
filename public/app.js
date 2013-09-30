@@ -141,7 +141,6 @@ function makePoint(sel) {
 // Reposition the SVG to cover the features.
 function reset() {
   if (!data) return;
-  console.log("viewreset");
   sessions
     .transition()
       .duration(100)
