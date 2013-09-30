@@ -38,6 +38,7 @@ function ChatController($scope, $http, $log) {
       $log.log(data); 
       sessionPrefix = data.uuid + ' ' + data.session;
       createCookie("sessionprefix", sessionPrefix, COOKIE_DAYS);
+      rebind();
     }); 
   }
 
@@ -86,7 +87,6 @@ var svg = d3.select('#map').select('svg');
 var data, sessions;
 
 map.on("viewreset", reset);
-
 
 d3.csv("/sessions.csv", function(error, serverData) {
   data = serverData;
