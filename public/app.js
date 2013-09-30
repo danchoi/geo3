@@ -62,6 +62,7 @@ function ChatController($scope, $http, $log) {
         msg = sessionPrefix+' move to '+loc;
     $log.log(msg);
     $http.post('/events', msg);
+    reset();
   });
 
 
@@ -80,41 +81,51 @@ function printBounds(b) {
   console.log([sw,se,ne,nw].toString());
 }
 
-var svg = d3.select(map.getPanes().overlayPane).append('svg');
+/* Initialize the SVG layer */
+map._initPathRoot()    
+
+
+// var svg = d3.select(map.getPanes().overlayPane).append('svg');
+var svg = d3.select('#map').select('svg');
 var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+var data;
 
-d3.csv("/sessions.csv", function(error, data) {
-  
+map.on("viewreset", reset);
+
+d3.csv("/sessions.csv", function(error, serverData) {
+  data = serverData;
+  reset();
+})
+
+
+// Reposition the SVG to cover the features.
+function reset() {
+  if (!data) return;
   data.forEach(function(d) { d.latLng = project(d); });
-
+  /*
   var latmin = d3.min(data, function(d) { return d.latLng.x }),
       latmax = d3.max(data, function(d) { return d.latLng.x }),
       lngmin = d3.min(data, function(d) { return d.latLng.y }),
       lngmax = d3.max(data, function(d) { return d.latLng.y }), 
       bottomLeft = map.latLngToLayerPoint(new L.LatLng(latmin, lngmin)),
       topRight = map.latLngToLayerPoint(new L.LatLng(latmax, lngmax));
-      console.log(bottomLeft);
-      console.log(topRight);
-
-  svg.attr("width", topRight.x - bottomLeft.x)
+  g.attr("width", topRight.x - bottomLeft.x)
      .attr("height", bottomLeft.y - topRight.y)
      .style("margin-left", bottomLeft.x + "px")
      .style("margin-top", topRight.y + "px");
-
   g.attr("transform", "translate(" + -bottomLeft.x + "," + -topRight.y + ")");
-
-  g.selectAll("circle").
+  */
+  svg.selectAll("circle").
     data(data).
     enter().
     append("circle").
     attr({
       "fill": "red",
       "r": 10,
-      "cx": function(d) { return project(d).x },
-      "cy": function(d) { return project(d).y }
-    });;
-
-})
+      "cx": function(d) { return d.latLng.x },
+      "cy": function(d) { return d.latLng.y }
+    });
+}
 
 
 // map utility
