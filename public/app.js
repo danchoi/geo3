@@ -125,6 +125,7 @@ function rebind() {
   })
 }
 
+setInterval(rebind, 2000);
 function reposition(sel) {
   sel.attr("transform", function(d) {
     var x = project(d).x;
