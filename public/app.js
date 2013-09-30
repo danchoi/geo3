@@ -83,11 +83,7 @@ function printBounds(b) {
 
 /* Initialize the SVG layer */
 map._initPathRoot()    
-
-
-// var svg = d3.select(map.getPanes().overlayPane).append('svg');
 var svg = d3.select('#map').select('svg');
-var g = svg.append("g").attr("class", "leaflet-zoom-hide");
 var data;
 
 map.on("viewreset", reset);
@@ -102,19 +98,6 @@ d3.csv("/sessions.csv", function(error, serverData) {
 function reset() {
   if (!data) return;
   data.forEach(function(d) { d.latLng = project(d); });
-  /*
-  var latmin = d3.min(data, function(d) { return d.latLng.x }),
-      latmax = d3.max(data, function(d) { return d.latLng.x }),
-      lngmin = d3.min(data, function(d) { return d.latLng.y }),
-      lngmax = d3.max(data, function(d) { return d.latLng.y }), 
-      bottomLeft = map.latLngToLayerPoint(new L.LatLng(latmin, lngmin)),
-      topRight = map.latLngToLayerPoint(new L.LatLng(latmax, lngmax));
-  g.attr("width", topRight.x - bottomLeft.x)
-     .attr("height", bottomLeft.y - topRight.y)
-     .style("margin-left", bottomLeft.x + "px")
-     .style("margin-top", topRight.y + "px");
-  g.attr("transform", "translate(" + -bottomLeft.x + "," + -topRight.y + ")");
-  */
   svg.selectAll("circle").
     data(data).
     enter().
