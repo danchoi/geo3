@@ -84,8 +84,8 @@ procEvent conn = do
 processEvent' :: IConnection a => a -> Event -> IO Result
 processEvent' c e = do
     res <- processEvent c e
-    _ <- system "sqlite3 -header -csv db/test.db 'select * from sessions' > sessions.csv"
-    _ <- system "sqlite3 -header -csv db/test.db 'select * from posts' > posts.csv"
+    _ <- system "sqlite3 -header -csv db/test.db 'select * from sessions' > public/sessions.csv"
+    _ <- system "sqlite3 -header -csv db/test.db 'select * from posts' > public/posts.csv"
     return res
 
 test  = do 
