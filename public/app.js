@@ -51,6 +51,7 @@ function ChatController($scope, $http, $log) {
     clearCookies();
     $scope.nickname = null;
     sessionPrefix = null;
+    rebind();
   }
 
   map.on('moveend', function(e) {
@@ -121,6 +122,7 @@ function rebind() {
     data = serverData;
     // bind to new values
     sessions.data(data, function(d) {return d.session});
+    // need to enter()
     reset();
   })
 }
