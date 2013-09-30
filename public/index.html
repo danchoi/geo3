@@ -18,10 +18,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-6">
-          <div id="map"></div>
-        </div>
-        <div  class="col-md-6">
+        <div  class="col-md-5">
           Chat
           <form name="name-form" ng-submit="submitNick()">
             <input type='text' ng-model="nickname"/>
@@ -31,6 +28,9 @@
           <hr/>
           <p>Nickname: {{nickname}}</p>
           <button ng-click="logout()">log out</button>
+        </div>
+        <div class="col-md-7">
+          <div id="map"></div>
         </div>
       </div>
     </div>
